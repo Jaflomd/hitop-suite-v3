@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HiTOP Paciente</title>
+<style>
+  :root{
+    --bg:#f7f6f3; --panel:#ffffff; --line:#e6e4df; --text:#37352f; --soft:#787774;
+    --accent:#2383e2; --accent-tx:#ffffff; --track:#ececea; --ok:#4f9d69; --warn:#e2922e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 "Segoe UI",system-ui,sans-serif}
+  button,input{font:inherit}
+  button{cursor:pointer;border:0;border-radius:6px;background:var(--accent);color:var(--accent-tx);font-weight:800;padding:11px 14px}
+  button.secondary{background:var(--panel);color:var(--text);border:1px solid var(--line)}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  input{width:100%;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text);padding:11px 12px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--soft);font-weight:800;margin:0 0 6px}
+  .hidden{display:none!important}
+  .shell{min-height:100vh;display:grid;grid-template-rows:auto 1fr}
+  header{height:56px;display:flex;align-items:center;gap:12px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+  .brand{font-weight:900}.tag{font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.08em}
+  .spacer{flex:1}
+  main{width:min(920px,calc(100vw - 28px));margin:28px auto}
+  .login-wrap{min-height:calc(100vh - 56px);display:grid;place-items:center;padding:24px}
+  .login{width:min(360px,100%);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:22px}
+  h1{font-size:20px;margin:0 0 2px} h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);margin:0 0 12px}
+  .sub{font-size:13px;color:var(--soft);margin:0 0 18px}
+  .field{margin:14px 0}
+  .err{min-height:18px;color:#9b2c23;font-size:13px;margin-top:10px}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:14px}
+  .metric{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:10px 0}
+  .metric:last-child{border-bottom:0}
+  .name{font-weight:800}.value{color:var(--soft);font-variant-numeric:tabular-nums}
+  .status{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:var(--soft)}
+  .dot{width:9px;height:9px;border-radius:999px;background:var(--warn)}
+  .dot.ok{background:var(--ok)}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .list{display:flex;flex-direction:column;gap:8px}
+  .row{border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--bg)}
+  .row-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .small{font-size:12px;color:var(--soft)}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <span class="brand">HiTOP</span>
+    <span class="tag">Paciente</span>
+    <span class="spacer"></span>
+    <button class="secondary hidden" id="logoutBtn">Salir</button>
+  </header>
+
+  <section class="login-wrap" id="loginView">
+    <form class="login" id="loginForm">
+      {% csrf_token %}
+      <h1>Ingreso paciente</h1>
+      <p class="sub">Yachay</p>
+      <div class="field">
+        <label for="hclCode">Codigo HCL/Yachay</label>
+        <input id="hclCode" name="hclCode" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="dni">DNI</label>
+        <input id="dni" name="dni" type="password" inputmode="numeric" autocomplete="current-password" required>
+      </div>
+      <button type="submit" id="loginBtn">Entrar</button>
+      <div class="err" id="loginErr"></div>
+    </form>
+  </section>
+
+  <main class="hidden" id="dashboardView">
+    <div class="grid">
+      <section class="panel">
+        <h2>Paciente</h2>
+        <div class="metric"><span class="name">Codigo interno</span><span class="value" id="subjectId">s/d</span></div>
+        <div class="metric"><span class="name">Acceso</span><span class="status"><span class="dot ok"></span>activo</span></div>
+        <div class="actions">
+          <button id="sessionBtn">Iniciar sesion</button>
+          <button class="secondary" id="refreshBtn">Actualizar</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Sesion actual</h2>
+        <div class="metric"><span class="name">Estado</span><span class="value" id="sessionStatus">s/d</span></div>
+        <div class="metric"><span class="name">ID</span><span class="value" id="sessionId">s/d</span></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>Resultados</h2>
+      <div class="list" id="resultsList"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+const state={patient:null,sessions:[],session:null,results:[]};
+
+function csrfToken(){
+  const match=document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+  return match?decodeURIComponent(match[1]):document.querySelector("[name=csrfmiddlewaretoken]").value;
+}
+async function api(path,opts={}){
+  const method=opts.method||"GET";
+  const res=await fetch(path,{
+    credentials:"same-origin",
+    headers:{
+      "Content-Type":"application/json",
+      ...(method==="GET"?{}:{"X-CSRFToken":csrfToken()}),
+      ...(opts.headers||{})
+    },
+    ...opts
+  });
+  const data=await res.json();
+  if(!res.ok||data.ok===false)throw new Error(data.error||"Error");
+  return data;
+}
+function showDashboard(){
+  document.getElementById("loginView").classList.add("hidden");
+  document.getElementById("dashboardView").classList.remove("hidden");
+  document.getElementById("logoutBtn").classList.remove("hidden");
+}
+function showLogin(){
+  document.getElementById("loginView").classList.remove("hidden");
+  document.getElementById("dashboardView").classList.add("hidden");
+  document.getElementById("logoutBtn").classList.add("hidden");
+}
+function render(){
+  document.getElementById("subjectId").textContent=state.patient?state.patient.subject_id:"s/d";
+  document.getElementById("sessionStatus").textContent=state.session?state.session.status:"s/d";
+  document.getElementById("sessionId").textContent=state.session?state.session.session_id.slice(0,8):"s/d";
+  const list=document.getElementById("resultsList");
+  if(!state.results.length){
+    list.innerHTML='<div class="small">Sin resultados registrados.</div>';
+    return;
+  }
+  list.innerHTML=state.results.map(r=>`<div class="row">
+    <div class="row-top"><span class="name">${r.scale_label}</span><span class="value">${r.raw_value||"s/d"}${r.max_value?"/"+r.max_value:""}</span></div>
+    <div class="small">${r.severity||"s/d"} · ${r.percentile!=null?r.percentile+"/100":"s/d"}</div>
+  </div>`).join("");
+}
+async function loadSessions(){
+  const data=await api("/api/patient/sessions/");
+  state.sessions=data.sessions||[];
+  state.session=state.sessions.find(s=>s.status==="open")||state.sessions[0]||null;
+  if(state.session){
+    const rd=await api(`/api/patient/sessions/${state.session.session_id}/results/`);
+    state.results=rd.results||[];
+  }else{
+    state.results=[];
+  }
+  render();
+}
+async function boot(){
+  await api("/api/auth/csrf/");
+  const me=await api("/api/patient/auth/me/");
+  if(me.authenticated){
+    state.patient=me.patient;
+    showDashboard();
+    await loadSessions();
+  }else{
+    showLogin();
+  }
+}
+document.getElementById("loginForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const err=document.getElementById("loginErr"), btn=document.getElementById("loginBtn");
+  err.textContent=""; btn.disabled=true;
+  try{
+    const data=await api("/api/patient/auth/login/",{
+      method:"POST",
+      body:JSON.stringify({hcl_code:document.getElementById("hclCode").value,dni:document.getElementById("dni").value})
+    });
+    state.patient=data.patient;
+    showDashboard();
+    await loadSessions();
+  }catch(ex){err.textContent=ex.message;}
+  finally{btn.disabled=false;}
+});
+document.getElementById("sessionBtn").onclick=async()=>{
+  const data=await api("/api/patient/sessions/",{method:"POST",body:JSON.stringify({})});
+  state.session=data.session;
+  await loadSessions();
+};
+document.getElementById("refreshBtn").onclick=loadSessions;
+document.getElementById("logoutBtn").onclick=async()=>{
+  await api("/api/patient/auth/logout/",{method:"POST",body:"{}"});
+  state.patient=null;state.sessions=[];state.session=null;state.results=[];
+  showLogin();
+};
+boot().catch(()=>showLogin());
+</script>
+</body>
+</html>

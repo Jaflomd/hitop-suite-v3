@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import Client, TestCase
 
-from .models import AssessmentResult, AssessmentSession, AuditLog, BackupRun, Patient, PatientIdentifier
+from .models import AssessmentResult, AssessmentSession, AuditLog, BackupRun, Patient, PatientIdentifier, PatientPortalAccess
 
 
 class ClinicalBackendTests(TestCase):
@@ -69,6 +69,75 @@ class ClinicalBackendTests(TestCase):
         self.assertNotIn("Nombre Real", identifier.encrypted_payload)
         self.assertNotIn("12345678", identifier.encrypted_payload)
         self.assertEqual(identifier.get_payload()["document"], "12345678")
+
+    def test_patient_portal_access_hashes_hcl_and_dni(self):
+        patient = Patient.objects.create(subject_id="SUBJ-321", created_by=self.user)
+        access = PatientPortalAccess(patient=patient, created_by=self.user)
+        access.set_hcl_code("YCH-000321")
+        access.set_dni_password("12345678")
+        access.save()
+
+        self.assertEqual(access.hcl_code_hint, "0321")
+        self.assertNotIn("YCH-000321", access.hcl_code_hash)
+        self.assertNotIn("12345678", access.dni_password_hash)
+        self.assertTrue(access.check_dni_password("12345678"))
+
+    def test_patient_portal_login_session_and_result_flow(self):
+        patient = Patient.objects.create(subject_id="SUBJ-654", created_by=self.user)
+        access = PatientPortalAccess(patient=patient, created_by=self.user)
+        access.set_hcl_code("YCH-000654")
+        access.set_dni_password("87654321")
+        access.save()
+
+        login_response = self.client.post(
+            "/api/patient/auth/login/",
+            data=json.dumps({"hcl_code": "YCH-000654", "dni": "87654321"}),
+            content_type="application/json",
+        )
+        self.assertEqual(login_response.status_code, 200)
+        self.assertEqual(login_response.json()["patient"]["subject_id"], "SUBJ-654")
+
+        session_response = self.client.post("/api/patient/sessions/", data="{}", content_type="application/json")
+        self.assertEqual(session_response.status_code, 201)
+        session_id = session_response.json()["session"]["session_id"]
+
+        result_response = self.client.post(
+            f"/api/patient/sessions/{session_id}/results/",
+            data=json.dumps(
+                {
+                    "scale_id": "GAD-7",
+                    "scale_label": "GAD-7",
+                    "raw_value": "12",
+                    "max_value": "21",
+                    "percentile": 57,
+                    "severity": "mid",
+                    "payload": {"source": "patient"},
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(result_response.status_code, 201)
+        self.assertEqual(AssessmentSession.objects.filter(patient=patient).count(), 1)
+        self.assertEqual(AssessmentResult.objects.filter(session__patient=patient, scale_id="GAD-7").count(), 1)
+        self.assertGreaterEqual(AuditLog.objects.filter(action__startswith="patient_").count(), 2)
+
+    def test_patient_portal_rejects_wrong_dni_without_leaking_code(self):
+        patient = Patient.objects.create(subject_id="SUBJ-999", created_by=self.user)
+        access = PatientPortalAccess(patient=patient, created_by=self.user)
+        access.set_hcl_code("YCH-000999")
+        access.set_dni_password("11112222")
+        access.save()
+
+        response = self.client.post(
+            "/api/patient/auth/login/",
+            data=json.dumps({"hcl_code": "YCH-000999", "dni": "00000000"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["error"], "Invalid credentials.")
+        access.refresh_from_db()
+        self.assertEqual(access.failed_login_count, 1)
+        self.assertFalse(any("YCH-000999" in str(log.metadata) for log in AuditLog.objects.all()))
 
     def test_audit_log_is_append_only(self):
         log = AuditLog.objects.create(actor=self.user, action="test.action")

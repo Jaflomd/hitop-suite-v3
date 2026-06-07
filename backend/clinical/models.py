@@ -1,10 +1,11 @@
 import uuid
 
 from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
 from django.db import models
 from django.utils import timezone
 
-from .crypto import decrypt_json, encrypt_json
+from .crypto import decrypt_json, encrypt_json, lookup_hash, normalize_lookup
 
 
 class TimestampedModel(models.Model):
@@ -44,6 +45,45 @@ class PatientIdentifier(TimestampedModel):
 
     def __str__(self):
         return f"Identifier<{self.patient.subject_id}>"
+
+
+class PatientPortalAccess(TimestampedModel):
+    patient = models.OneToOneField(Patient, related_name="portal_access", on_delete=models.CASCADE)
+    hcl_code_hash = models.CharField(max_length=128, unique=True, db_index=True)
+    hcl_code_hint = models.CharField(max_length=16, blank=True)
+    dni_password_hash = models.CharField(max_length=256)
+    is_active = models.BooleanField(default=True)
+    last_login_at = models.DateTimeField(null=True, blank=True)
+    failed_login_count = models.PositiveIntegerField(default=0)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        verbose_name = "patient portal access"
+        verbose_name_plural = "patient portal access"
+
+    def set_hcl_code(self, hcl_code):
+        normalized = normalize_lookup(hcl_code)
+        self.hcl_code_hash = lookup_hash(normalized, "patient-hcl")
+        self.hcl_code_hint = normalized[-4:] if normalized else ""
+
+    def set_dni_password(self, dni):
+        self.dni_password_hash = make_password(normalize_lookup(dni))
+
+    def check_dni_password(self, dni):
+        return check_password(normalize_lookup(dni), self.dni_password_hash)
+
+    def mark_login_success(self):
+        self.last_login_at = timezone.now()
+        self.failed_login_count = 0
+        self.save(update_fields=["last_login_at", "failed_login_count", "updated_at"])
+
+    def mark_login_failed(self):
+        self.failed_login_count = models.F("failed_login_count") + 1
+        self.save(update_fields=["failed_login_count", "updated_at"])
+        self.refresh_from_db(fields=["failed_login_count"])
+
+    def __str__(self):
+        return f"{self.patient.subject_id}/HCL-*{self.hcl_code_hint}"
 
 
 class ScaleVersion(TimestampedModel):

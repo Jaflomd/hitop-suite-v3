@@ -21,7 +21,9 @@ Beta interna autocontenida para exploracion dimensional HiTOP + neurodesarrollo.
 - Carpeta: `backend/`.
 - SPEC: `BACKEND_LOCAL_SPEC.md`.
 - Auth: sesiones server-side de Django.
-- Datos: `Patient`, `AssessmentSession`, `AssessmentResult`, `AuditLog`, `BackupRun`.
+- Datos: `Patient`, `PatientPortalAccess`, `AssessmentSession`, `AssessmentResult`, `AuditLog`, `BackupRun`.
+- Portal paciente: `http://127.0.0.1:8000/paciente/`.
+- Acceso paciente: codigo HCL/Yachay + DNI inicial; se guardan hashes, no DNI plano.
 - Backups: `backend/scripts/backup_local.sh`, cifrado con OpenSSL y excluido de Git.
 
 Arranque:
@@ -52,6 +54,6 @@ python backend/manage.py test clinical
 ## Notas de riesgo
 
 - Beta interna, no herramienta clinica validada.
-- La clave de acceso esta en cliente y no constituye seguridad real.
-- No usar con datos identificables de pacientes hasta implementar backend seguro, control de acceso, auditoria, consentimiento y gobierno de datos.
+- La clave local del HTML unico sigue siendo solo una barrera de beta; el portal paciente usa auth server-side.
+- No usar con datos identificables fuera del entorno local controlado hasta completar consentimiento, privacidad, auditoria formal y gobierno de datos.
 - Ver `PRODUCTION_READINESS.md` antes de cualquier uso clinico real.

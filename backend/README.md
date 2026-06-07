@@ -24,8 +24,23 @@ API local:
 
 - `GET http://127.0.0.1:8000/api/health/`
 - `POST http://127.0.0.1:8000/api/auth/login/`
+- `POST http://127.0.0.1:8000/api/patient/auth/login/`
+- `GET http://127.0.0.1:8000/api/patient/sessions/`
 - `GET http://127.0.0.1:8000/api/patients/`
 - `GET http://127.0.0.1:8000/api/export/csv/`
+
+Portal paciente:
+
+- `GET http://127.0.0.1:8000/paciente/`
+- Credencial inicial: codigo HCL/Yachay + DNI.
+- El codigo HCL se guarda como hash HMAC para busqueda.
+- El DNI se guarda como hash de password Django, nunca plano.
+
+Para enrolar un paciente desde admin:
+
+1. Crear o ubicar `Patient`.
+2. Crear `Patient portal access`.
+3. Escribir codigo HCL/Yachay y DNI inicial una sola vez.
 
 ## Backups Locales Cifrados
 
@@ -48,6 +63,7 @@ python -m venv /tmp/hitop_backend_venv
 
 - `Patient`: pseudonimo (`SUBJ-001`), sin identificadores.
 - `PatientIdentifier`: payload opcional cifrado, separado de `Patient`.
+- `PatientPortalAccess`: HCL hasheado + DNI hasheado para login paciente local.
 - `AssessmentSession`: sesion por paciente.
 - `AssessmentResult`: resultado por escala/version.
 - `AuditLog`: append-only para acciones criticas.

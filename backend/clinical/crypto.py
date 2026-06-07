@@ -5,6 +5,7 @@ import os
 
 from cryptography.fernet import Fernet
 from django.conf import settings
+from django.utils.crypto import salted_hmac
 
 
 def _fallback_key():
@@ -29,3 +30,12 @@ def decrypt_json(token):
         return {}
     data = fernet().decrypt(token.encode("utf-8"))
     return json.loads(data.decode("utf-8"))
+
+
+def normalize_lookup(value):
+    return "".join(str(value or "").strip().upper().split())
+
+
+def lookup_hash(value, namespace):
+    normalized = normalize_lookup(value)
+    return salted_hmac(f"hitop.{namespace}", normalized, secret=settings.SECRET_KEY).hexdigest()

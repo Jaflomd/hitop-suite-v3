@@ -79,6 +79,7 @@ Artefactos Sprint 1:
 - [x] Base de datos local Docker/Postgres preparada; identificadores opcionales cifrados por campo.
 - [x] Pacientes, sesiones y evaluaciones separadas.
 - [x] Auditoria append-only y backups locales cifrados.
+- [x] Portal paciente local con codigo HCL/Yachay + DNI inicial hasheado.
 - [ ] Hardening para produccion real: MFA, TLS obligatorio, RLS/roles DB, restauracion probada, retencion, deploy bajo BAA.
 
 Artefactos Sprint 2 local:
@@ -87,6 +88,7 @@ Artefactos Sprint 2 local:
 - `backend/`: Django app.
 - `docker-compose.yml`: Postgres + web local.
 - `backend/scripts/backup_local.sh`: backup local cifrado.
+- `http://127.0.0.1:8000/paciente/`: portal paciente local.
 
 ### Sprint 3 - Validacion clinica
 - Piloto con casos pseudonimizados.
