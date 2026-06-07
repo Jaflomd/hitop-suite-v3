@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>B-HiTOP + Neurodesarrollo — Prototipo</title>
+<style>
+  :root{
+    --bg:#ffffff; --bg2:#f7f6f3; --panel:#ffffff; --panel2:#f7f6f3; --line:#e9e9e7;
+    --text:#37352f; --soft:#787774; --faint:#9b9a97;
+    --accent:#2383e2; --accent-tx:#ffffff; --pct-bg:rgba(0,0,0,.16);
+    --none:#f1f0ef; --none-tx:#787774; --low:#dbeddb; --low-tx:#1c3a29;
+    --mid:#fdecc8; --mid-tx:#5b4422; --high:#ffcfc9; --high-tx:#5d1715;
+    --sv-high:#e0564d; --sv-mid:#e2922e; --sv-low:#4f9d69; --track:#ececea;
+    --radius:6px;
+  }
+  [data-theme="oscuro"]{
+    --bg:#191919; --bg2:#202020; --panel:#202020; --panel2:#2a2a2a; --line:#2f2f2f;
+    --text:#e9e9e7; --soft:#9b9a97; --faint:#6f6e6b;
+    --accent:#5b9bd5; --accent-tx:#0b1f30; --pct-bg:rgba(255,255,255,.12);
+    --none:#373737; --none-tx:#9b9a97; --low:#2d3b35; --low-tx:#a6d8b9;
+    --mid:#59492b; --mid-tx:#f3d692; --high:#5a2d2a; --high-tx:#ffb3ac;
+    --sv-high:#e0564d; --sv-mid:#e2922e; --sv-low:#56b277; --track:#313131;
+  }
+  [data-theme="negro"]{
+    --bg:#000000; --bg2:#0a0a0a; --panel:#0c0c0c; --panel2:#141414; --line:#242424;
+    --text:#f3f3f3; --soft:#a0a0a0; --faint:#6a6a6a;
+    --accent:#5b9bd5; --accent-tx:#06141f; --pct-bg:rgba(255,255,255,.12);
+    --none:#1b1b1b; --none-tx:#9a9a9a; --low:#103a24; --low-tx:#7fe0a6;
+    --mid:#3a2e10; --mid-tx:#f5cf7a; --high:#3f1512; --high-tx:#ff9c93;
+    --sv-high:#e0564d; --sv-mid:#e2922e; --sv-low:#56b277; --track:#1f1f1f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 "Segoe UI",system-ui,sans-serif}
+  button{font-family:inherit;cursor:pointer}
+  .hidden{display:none!important}
+
+  #gate{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:20}
+  .gate-card{width:min(360px,90vw);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:28px;text-align:center}
+  .gate-card h1{font-size:18px;margin:0 0 4px}.gate-card p{color:var(--soft);font-size:13px;margin:0 0 16px}
+  .gate-card input{width:100%;padding:11px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:16px;text-align:center}
+  .gate-card button{width:100%;margin-top:10px;padding:11px;border:none;border-radius:6px;background:var(--accent);color:var(--accent-tx);font-weight:700}
+  .gate-err{color:var(--high-tx);font-size:13px;margin-top:8px;min-height:16px}
+
+  header{display:flex;gap:14px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header .brand{font-weight:700}
+  header .tag{font-size:11px;color:var(--accent-tx);background:var(--accent);padding:2px 8px;border-radius:999px;font-weight:700}
+  header select,header button.act{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:13px}
+  header .spacer{flex:1}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .seg button{background:var(--panel2);color:var(--soft);border:none;padding:8px 14px;font-size:13px}
+  .seg button.on{background:var(--accent);color:var(--accent-tx);font-weight:700}
+
+  .wrap{display:grid;grid-template-columns:1fr 372px;gap:16px;padding:18px;align-items:start}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin:0 0 4px}
+  .card .sub{font-size:12px;color:var(--faint);margin:0 0 12px}
+  .map-head{display:grid;grid-template-columns:minmax(220px,1fr) minmax(260px,420px);gap:14px;align-items:start;margin-bottom:12px}
+  .map-head .sub{margin:0}
+  .item-progress{background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:9px 10px}
+  .item-progress-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:7px}
+  .item-progress-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:800}
+  .item-progress-count{font-size:13px;font-weight:900;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .item-progress-track{height:8px;background:var(--track);border-radius:999px;overflow:hidden}
+  .item-progress-track i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--sv-low),var(--accent))}
+  .item-progress-meta{display:flex;justify-content:space-between;gap:10px;margin-top:6px;color:var(--soft);font-size:11px;font-variant-numeric:tabular-nums}
+  .muted{color:var(--soft);font-size:13px}
+  .demo-banner{font-size:12px;color:var(--faint);margin:0 18px}
+  @media(max-width:720px){.map-head{grid-template-columns:1fr}.item-progress{min-width:0}}
+
+  .rowlabels{display:grid;grid-template-columns:repeat(3,1fr);font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+  .rowlabels span:nth-child(2){text-align:center}.rowlabels span:nth-child(3){text-align:right}
+  .map{overflow-x:auto;padding-bottom:4px}
+  .row{display:flex;gap:6px;margin-bottom:6px;align-items:flex-start}
+  .node{border:1px solid var(--line);border-radius:6px;padding:8px 10px;color:var(--text);background:var(--bg2);font-weight:600;font-size:12px;line-height:1.2;width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:6px;transition:filter .12s,transform .12s}
+  .node:hover{filter:brightness(.99);transform:translateY(-1px)}
+  .node-title{display:flex;align-items:center;gap:6px;width:100%;justify-content:flex-start;min-width:0}
+  .node-label{text-align:left;min-width:0}
+  .node.level-top{align-items:center}
+  .node.level-top .node-title{justify-content:center}
+  .node.level-top .node-label{text-align:center}
+  .node.level-top .sevbar-wrap{width:100%}
+  .sevbar-wrap{display:flex;align-items:center;gap:8px;width:100%}
+  .sevbar{flex:1;height:5px;background:var(--track);border-radius:999px;overflow:hidden}
+  .sevbar i{display:block;height:100%;border-radius:999px}
+  .sevnum{font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--soft);white-space:nowrap}
+  .node.sel{outline:2px solid var(--accent);outline-offset:1px}
+  .band{flex:1}.spectrum{min-height:52px;flex:1 1 0;justify-content:space-between}.spacer{flex-basis:0}
+  .col{flex:1 1 130px;min-width:130px;display:flex;flex-direction:column;gap:6px}
+  .map-inner{min-width:max-content;display:flex;flex-direction:column;gap:6px}
+  .spectra-groups{display:flex;gap:6px;align-items:flex-start}
+  .sgroup{flex-basis:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+  .leaf-row{display:flex;gap:4px}
+  .leaf{flex:1 1 0;min-width:116px;display:flex;flex-direction:column;gap:5px}
+  .spectop{min-height:40px}
+  .subnode{min-height:36px}
+  .rb-sym{background:var(--panel2)}
+  .dis-block{display:flex;flex-direction:column;gap:2px}
+  .dis{font-size:9.5px;color:var(--soft);line-height:1.25}
+  .hgrid{display:grid;gap:8px 4px;align-items:stretch}
+  .hgrid>div{min-width:0;display:flex;flex-direction:column}
+  .rowlab{justify-content:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--faint);padding-right:8px;border-right:1px solid var(--line);text-align:right}
+  .hgrid .rail-block{flex:1}
+  .hgrid .facet-rail{gap:4px}
+  .rail-block{margin-top:4px;background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:6px 5px}
+  .rail-cap{font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-bottom:5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .facet-rail{display:flex;flex-direction:column;gap:4px}
+  .trans-rail{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:6px}
+  .hchip{display:flex;align-items:center;gap:6px;cursor:pointer;padding:2px 4px;border-radius:3px}
+  .hchip:hover{background:var(--panel2)}
+  .hchip.sel{outline:1.5px solid var(--accent)}
+  .done-dot{width:12px;height:12px;border:1.4px solid var(--faint);border-radius:999px;display:grid;place-items:center;flex:0 0 12px;color:transparent;font-size:8px;font-weight:900;line-height:1}
+  .done-dot.done{background:var(--sv-low);border-color:var(--sv-low);color:#fff}
+  .node-dot{width:9px;height:9px;border:1.5px solid var(--faint);border-radius:999px;display:inline-block;flex:0 0 9px}
+  .node-dot.done{background:var(--sv-low);border-color:var(--sv-low)}
+  .hlabel{font-size:10px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;max-width:44%}
+  .hbar{flex:1;height:7px;background:var(--track);border-radius:999px;overflow:hidden;min-width:24px}
+  .hbar i{display:block;height:100%;border-radius:999px}
+  .fcol{display:flex;flex-direction:column;align-items:center;gap:3px;flex:0 0 auto;cursor:pointer;padding:1px;border-radius:3px}
+  .fcol:hover{background:var(--panel2)}
+  .fcol.sel{outline:2px solid var(--accent)}
+  .fmeter{width:5px;height:26px;background:var(--track);border-radius:999px;overflow:hidden;display:flex;align-items:flex-end;flex:0 0 auto}
+  .fmeter i{display:block;width:100%;border-radius:999px}
+  .flabel{writing-mode:vertical-rl;transform:rotate(180deg);font-size:8.5px;color:var(--soft);white-space:nowrap;height:62px;overflow:hidden;text-overflow:ellipsis}
+  .ctx-band{border:1px dashed var(--line);border-radius:6px;padding:8px;margin-bottom:6px}
+  .ctx-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:6px}
+  .ctx-band .row{margin-bottom:0}
+  .sev-none{background:var(--track)}
+  .sev-low{background:var(--sv-low)}.sev-mid{background:var(--sv-mid)}.sev-high{background:var(--sv-high)}
+  .legend{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;font-size:12px;color:var(--faint)}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+  .pheader{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;gap:8px}
+  .pheader .pc{font-size:19px;font-weight:800}
+  .kind{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+  .scale{padding:9px 0;border-bottom:1px solid var(--line)}.scale:last-child{border-bottom:none}
+  .scale .top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .scale .nm{font-weight:600}.scale .val{color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .bar{height:6px;background:var(--panel2);border-radius:999px;margin-top:6px;overflow:hidden}.bar i{display:block;height:100%}
+  .items{margin:8px 0 0;padding-left:18px}.items li{font-size:12.5px;color:var(--soft);margin:3px 0}
+  .facet{padding:7px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:1px}
+  .facet:last-child{border-bottom:none}
+  .fname{font-weight:600;font-size:13px}
+  .fsum{font-size:12px;color:var(--soft)}
+  .empty{color:var(--faint);font-size:13px;padding:8px 0}
+  .do-btn{background:var(--accent);color:var(--accent-tx);border:none;border-radius:6px;padding:9px 14px;font-size:13px;font-weight:700}
+  .do-btn:hover{filter:brightness(1.06)}.do-btn.wide{width:100%}.do-btn.sm{padding:6px 11px;font-size:12px}
+  .ghost{background:transparent;color:var(--soft);border:1px solid var(--line);border-radius:6px;padding:9px 14px;font-size:13px}
+
+  /* Administracion: un item por pantalla grande */
+  #modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:30;padding:16px}
+  .admin-card{width:min(640px,96vw);max-height:94vh;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:26px}
+  .admin-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .admin-title{font-size:18px;font-weight:800}
+  .x{background:transparent;border:none;color:var(--soft);font-size:16px;cursor:pointer}
+  .admin-prog{height:6px;background:var(--panel2);border-radius:999px;margin:16px 0 6px;overflow:hidden}
+  .admin-prog div{height:100%;background:var(--accent);transition:width .2s}
+  .admin-count{font-size:12px;color:var(--faint);margin-bottom:10px}
+  .admin-q{font-size:21px;font-weight:600;line-height:1.32;margin:10px 0 22px}
+  .admin-opts{display:flex;flex-direction:column;gap:10px}
+  .opt{text-align:left;padding:15px 18px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font-size:15px;transition:filter .12s,border-color .12s}
+  .opt:hover{border-color:var(--accent)}
+  .opt.on{background:var(--accent);color:var(--accent-tx);border-color:var(--accent);font-weight:700}
+  .admin-nav{display:flex;align-items:center;gap:12px;margin-top:22px}
+  .admin-nav .muted{flex:1;text-align:center}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <h1>HiTOP</h1><p>Prototipo · acceso restringido</p>
+    <input id="gateInput" type="password" inputmode="numeric" placeholder="Clave" />
+    <button id="gateBtn">Entrar</button>
+    <div class="gate-err" id="gateErr"></div>
+  </div>
+</div>
+
+<div id="appShell" class="hidden">
+  <header>
+    <span class="brand">HiTOP</span><span class="tag">PROTOTIPO</span>
+    <select id="patientSel"></select>
+    <div class="spacer"></div>
+    <div class="seg" id="themeSeg">
+      <button data-theme="claro" class="on">Claro</button>
+      <button data-theme="oscuro">Oscuro</button>
+      <button data-theme="negro">Negro</button>
+    </div>
+    <button class="act" id="csvBtn">Exportar CSV</button>
+  </header>
+  <p class="demo-banner">B-HiTOP (45 items) como base + Neurodevelopmental via ASRS-18 y AQ-10. Clic en una dimension del mapa: a la derecha puedes <b>hacer la escala</b>; al terminar se puntua el factor P y las dimensiones.</p>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="map-head">
+        <div>
+          <h2>Mapa HiTOP</h2>
+          <p class="sub">Color por percentil. B-HiTOP llena P y los 6 espectros; Neurodevelopmental se llena con ASRS-18 / AQ-10.</p>
+        </div>
+        <div class="item-progress" id="batteryProgress"></div>
+      </div>
+      <div class="map" id="map"></div>
+      <div class="legend">
+        <span><i class="sev-none"></i>sin evaluar</span><span><i class="sev-low"></i>baja</span>
+        <span><i class="sev-mid"></i>media</span><span><i class="sev-high"></i>alta</span>
+      </div>
+    </div>
+    <div class="card" id="panel"></div>
+  </div>
+</div>
+
+<div id="modal" class="hidden"></div>
+
+<script>
+/* ===================== Datos B-HiTOP ===================== */
+const BHITOP_ITEMS=[
+ ["HiTOP_69","Me costaba hacerme valer ante los demas."],
+ ["HiTOP_187","Me sentia abrumado por la ansiedad."],
+ ["HiTOP_378","Mi mente se llenaba de imagenes perturbadoras de una mala experiencia."],
+ ["HiTOP_570","Mis estados de animo eran intensos e impredecibles."],
+ ["HiTOP_333","Sentia asco de mi mismo."],
+ ["HiTOP_356","Pensaba mucho en la muerte."],
+ ["HiTOP_368","Me sentia alerta y en tension."],
+ ["HiTOP_215","Aun cuando era muy cuidadoso, me preocupaba si habia hecho algo correctamente."],
+ ["HiTOP_479","Me frustraba tener que convencer a otros de que tenia una enfermedad real."],
+ ["HiTOP_449","Tenia dolores en varias partes del cuerpo."],
+ ["HiTOP_451","Sentia que algo andaba mal con mi cuerpo."],
+ ["HiTOP_490","Temia poder sufrir una enfermedad grave."],
+ ["HiTOP_494","Podia sentir cambios en mi cuerpo."],
+ ["HiTOP_456","Me molestaban varios sintomas corporales sin explicacion medica clara o suficiente."],
+ ["HiTOP_487","Leer articulos sobre enfermedades me hacia preocuparme por mi salud."],
+ ["HiTOP_492","Notaba pequenos cambios en como se sentia mi cuerpo."],
+ ["HiTOP_50","Cuando tenia la oportunidad, preferia estar solo antes que con otras personas."],
+ ["HiTOP_624","Sentia que no queria estar en una relacion cercana."],
+ ["HiTOP_44","Las relaciones romanticas me parecian una molestia."],
+ ["HiTOP_625","No tenia interes en las relaciones romanticas."],
+ ["HiTOP_657","Era mas feliz cuando estaba solo."],
+ ["HiTOP_606","Oia cosas que nadie mas podia oir."],
+ ["HiTOP_596","Veia cosas que en realidad no estaban ahi."],
+ ["HiTOP_554","Sentia que las cosas a mi alrededor no eran reales."],
+ ["HiTOP_558","Me costaba distinguir si algo habia pasado de verdad o solo lo habia imaginado."],
+ ["HiTOP_583","Mis fantasias se sentian muy reales para mi."],
+ ["HiTOP_557","Sentia como si estuviera fuera de mi cuerpo."],
+ ["Ext_102","Tomaba decisiones rapidamente sin pensarlas bien."],
+ ["Ext_320","Tenia problemas para planificar y cumplir horarios."],
+ ["Ext_256","Abandonaba tareas que se volvian demasiado dificiles."],
+ ["Ext_361","Pagaba mis cuentas tarde o no cumplia otros plazos importantes."],
+ ["Ext_374","Perdia cosas que necesitaba."],
+ ["Ext_166","Decia cosas sin pensar."],
+ ["Ext_281","Compraba mucho mas de lo que necesitaba."],
+ ["Ext_97","Era una persona desordenada."],
+ ["Ext_13","Nunca llegaba a tiempo."],
+ ["Ext_262","Me resultaba facil manipular a los demas."],
+ ["Ext_22","Me resultaba facil enganar a los demas."],
+ ["Ext_370","Esperaba que me trataran mejor que a los demas."],
+ ["Ext_175","Merecia un trato especial."],
+ ["HiTOP_577","Hacia cosas para que los demas se fijaran en mi."],
+ ["HiTOP_11","Me gustaba atraer la atencion de los demas."],
+ ["Ext_367","La gente me decia que era frio de corazon."],
+ ["HiTOP_21","Las cosas salian mejor cuando yo le decia a los demas que hacer."],
+ ["Ext_50","Me gustaba tener poder."],
+].map(([code,text])=>({code,text}));
+
+const BHITOP_SCALES=[
+ {key:"pfactor",label:"Factor P (general)",mean:1.6812,sd:0.5514,codes:["HiTOP_333","HiTOP_368","HiTOP_451","HiTOP_456","HiTOP_44","HiTOP_624","HiTOP_606","HiTOP_557","Ext_256","Ext_166","Ext_22","HiTOP_577"]},
+ {key:"internalizing",label:"Internalizing",mean:1.8543,sd:0.7664,codes:["HiTOP_69","HiTOP_187","HiTOP_378","HiTOP_570","HiTOP_333","HiTOP_356","HiTOP_368","HiTOP_215"]},
+ {key:"somatoform",label:"Somatoform",mean:1.8193,sd:0.7113,codes:["HiTOP_479","HiTOP_449","HiTOP_451","HiTOP_490","HiTOP_494","HiTOP_456","HiTOP_487","HiTOP_492"]},
+ {key:"thought",label:"Thought Disorder",mean:1.2598,sd:0.4624,codes:["HiTOP_606","HiTOP_596","HiTOP_554","HiTOP_558","HiTOP_583","HiTOP_557"]},
+ {key:"detachment",label:"Detachment",mean:2.1276,sd:0.8763,codes:["HiTOP_50","HiTOP_624","HiTOP_44","HiTOP_625","HiTOP_657"]},
+ {key:"disinhibited",label:"Disinhibition",mean:1.6537,sd:0.5974,codes:["Ext_102","Ext_320","Ext_256","Ext_361","Ext_374","Ext_166","Ext_281","Ext_97","Ext_13"]},
+ {key:"antagonistic",label:"Antagonism",mean:1.4155,sd:0.4531,codes:["Ext_262","Ext_22","Ext_370","Ext_175","HiTOP_577","HiTOP_11","Ext_367","HiTOP_21","Ext_50"]},
+ {key:"external",label:"Externalizing",mean:1.5369,sd:0.4856,codes:["Ext_262","Ext_22","Ext_370","HiTOP_577","HiTOP_11","Ext_102","Ext_320","Ext_256","Ext_166","Ext_374"]},
+];
+const ITEMS_PER_SCALE={};
+BHITOP_SCALES.forEach(s=>{ITEMS_PER_SCALE[s.key]=s.codes.map(c=>(BHITOP_ITEMS.find(i=>i.code===c)||{}).text).filter(Boolean);});
+
+/* Neurodesarrollo base: ASRS-6 se conserva; la UI visible usa ASRS-18 + AQ-10 */
+const ASRS6=[
+ "Con que frecuencia tiene dificultad para terminar los detalles finales de un proyecto, una vez que las partes mas dificiles se han terminado?",
+ "Con que frecuencia tiene dificultad para ordenar las cosas cuando esta realizando una tarea que requiere organizacion?",
+ "Con que frecuencia tiene problemas para recordar citas u obligaciones?",
+ "Cuando tiene una tarea que requiere mucha reflexion, con que frecuencia evita o demora empezarla?",
+ "Con que frecuencia mueve las manos o los pies cuando tiene que permanecer sentado/a por mucho tiempo?",
+ "Con que frecuencia se siente demasiado activo/a e impulsado/a a hacer cosas, como si lo empujara un motor?"];
+const AQ10=[
+ "A menudo noto sonidos pequenos que otros no perciben.",
+ "Suelo concentrarme mas en el cuadro completo que en los detalles pequenos.",
+ "Me resulta facil hacer mas de una cosa a la vez.",
+ "Si me interrumpen, puedo volver rapidamente a lo que estaba haciendo.",
+ "Me resulta facil 'leer entre lineas' cuando alguien me habla.",
+ "Se darme cuenta cuando quien me escucha se esta aburriendo.",
+ "Cuando leo una historia, me cuesta deducir las intenciones de los personajes.",
+ "Me gusta coleccionar informacion sobre categorias de cosas (autos, aves, trenes, plantas).",
+ "Me resulta facil deducir lo que alguien piensa o siente con solo mirar su cara.",
+ "Me cuesta deducir las intenciones de las personas."];
+
+/* Procesos transdiagnosticos y contexto longitudinal (NO entra al factor P) */
+const SWLS=[
+ "En la mayoria de los aspectos, mi vida es como quiero que sea.",
+ "Las condiciones de mi vida son excelentes.",
+ "Estoy satisfecho con mi vida.",
+ "Hasta ahora he conseguido las cosas importantes que quiero en la vida.",
+ "Si pudiera vivir mi vida de nuevo, no cambiaria casi nada."];
+const SWLS_OPTS=["Muy en desacuerdo","En desacuerdo","Ligeramente en desacuerdo","Ni de acuerdo ni en desacuerdo","Ligeramente de acuerdo","De acuerdo","Muy de acuerdo"];
+const WSAS=[
+ "Estar de pie durante periodos largos (30 min).",
+ "Hacerse cargo de sus responsabilidades del hogar.",
+ "Aprender una tarea nueva (por ejemplo, llegar a un lugar nuevo).",
+ "Participar en actividades de la comunidad (fiestas, religiosas, etc.) como cualquier otra persona.",
+ "Verse afectado emocionalmente por su problema de salud.",
+ "Concentrarse en hacer algo durante 10 minutos.",
+ "Caminar largas distancias (1 km).",
+ "Lavarse todo el cuerpo.",
+ "Vestirse.",
+ "Tratar con personas que no conoce.",
+ "Mantener una amistad.",
+ "Realizar su trabajo o tareas diarias/escolares."];
+const WSAS_OPTS=["Ninguna","Leve","Moderada","Severa","Extrema"];
+const ACE_ITEMS=[
+ "Antes de los 18 anos, algun adulto del hogar le insulto, humillo o le hizo sentir miedo de dano fisico?",
+ "Antes de los 18 anos, algun adulto del hogar le empujo, golpeo, abofeteo o lesiono fisicamente?",
+ "Antes de los 18 anos, algun adulto o persona al menos 5 anos mayor tuvo contacto sexual no deseado con usted?",
+ "Antes de los 18 anos, sintio que nadie en su familia le queria, apoyaba o cuidaba emocionalmente?",
+ "Antes de los 18 anos, no tuvo suficiente comida, ropa limpia, proteccion o cuidado medico cuando lo necesitaba?",
+ "Antes de los 18 anos, sus padres o cuidadores se separaron o divorciaron?",
+ "Antes de los 18 anos, vio o escucho violencia fisica contra su madre, padre o cuidador/a?",
+ "Antes de los 18 anos, convivio con alguien con consumo problematico de alcohol o drogas?",
+ "Antes de los 18 anos, convivio con alguien con enfermedad mental grave, intento suicida o conducta suicida?",
+ "Antes de los 18 anos, algun miembro del hogar estuvo encarcelado?"
+];
+const ACE_OPTS=["No","Si"];
+const EQ5D_ITEMS=[
+ "Movilidad",
+ "Autocuidado",
+ "Actividades habituales",
+ "Dolor / malestar",
+ "Ansiedad / depresion"
+];
+const EQ5D_OPTS=["Sin problemas","Problemas leves","Problemas moderados","Problemas graves","Problemas extremos o incapacidad"];
+const DERS16_ITEMS=[
+ "Me cuesta entender que estoy sintiendo.",
+ "Me siento confundido/a sobre como me siento.",
+ "Cuando estoy molesto/a, me cuesta hacer mi trabajo o tareas.",
+ "Cuando estoy molesto/a, siento que pierdo el control.",
+ "Cuando estoy molesto/a, creo que voy a seguir asi por mucho tiempo.",
+ "Cuando estoy molesto/a, creo que terminare sintiendome muy deprimido/a.",
+ "Cuando estoy molesto/a, me cuesta concentrarme en otras cosas.",
+ "Cuando estoy molesto/a, me siento fuera de control.",
+ "Cuando estoy molesto/a, me averguenzo de sentirme asi.",
+ "Cuando estoy molesto/a, siento que soy debil.",
+ "Cuando estoy molesto/a, me cuesta controlar mi conducta.",
+ "Cuando estoy molesto/a, creo que no hay nada que pueda hacer para sentirme mejor.",
+ "Cuando estoy molesto/a, me irrito conmigo mismo/a por sentirme asi.",
+ "Cuando estoy molesto/a, siento que quedarme atrapado/a en eso es lo unico que puedo hacer.",
+ "Cuando estoy molesto/a, me cuesta pensar en cualquier otra cosa.",
+ "Cuando estoy molesto/a, me toma mucho tiempo sentirme mejor."
+];
+const DERS16_OPTS=["Casi nunca","A veces","Aproximadamente la mitad del tiempo","La mayoria del tiempo","Casi siempre"];
+const AAQII_ITEMS=[
+ "Mis experiencias y recuerdos dolorosos me dificultan vivir una vida que valoro.",
+ "Me preocupa no poder controlar mis preocupaciones y sentimientos.",
+ "Mis recuerdos dolorosos me impiden tener una vida plena.",
+ "Mis pensamientos y sentimientos dolorosos me hacen dificil vivir como quiero.",
+ "Mis emociones interfieren con mi vida.",
+ "Parece que la mayoria de personas maneja su vida mejor que yo.",
+ "Mis preocupaciones obstaculizan mi camino hacia lo que quiero hacer."
+];
+const AAQII_OPTS=["Nunca verdadero","Muy rara vez verdadero","Rara vez verdadero","A veces verdadero","Frecuentemente verdadero","Muy frecuentemente verdadero","Siempre verdadero"];
+const UPPSP_ITEMS=[
+ "Generalmente termino lo que empiezo.",
+ "Cuando estoy haciendo algo, nada logra distraerme.",
+ "Cuando estoy muy feliz, suelo hacer cosas que pueden traerme problemas.",
+ "Tiendo a actuar sin pensar bien las cosas.",
+ "Planifico mis tareas con cuidado.",
+ "Cuando estoy molesto/a, suelo hacer cosas de las que luego me arrepiento.",
+ "Me mantengo en una tarea aunque sea dificil o aburrida.",
+ "Cuando me siento mal, actuo impulsivamente para sentirme mejor.",
+ "Disfruto actividades nuevas y emocionantes, aunque impliquen riesgo.",
+ "Cuando estoy muy animado/a, hago cosas sin pensar en las consecuencias.",
+ "Antes de decidir, pienso en los pros y contras.",
+ "Me gusta pensar cuidadosamente antes de actuar.",
+ "Cuando estoy alterado/a, digo cosas de las que luego me arrepiento.",
+ "Me atraen las experiencias intensas o arriesgadas.",
+ "Cuando estoy molesto/a, hago cosas impulsivas que empeoran la situacion.",
+ "Me gusta hacer cosas que me den una descarga de emocion.",
+ "Cuando estoy muy feliz, pierdo control sobre lo que hago.",
+ "Busco sensaciones o experiencias excitantes.",
+ "Soy una persona cuidadosa y previsora.",
+ "Cuando estoy extremadamente contento/a, tomo decisiones precipitadas."
+];
+const UPPSP_OPTS=["Muy de acuerdo","Algo de acuerdo","Algo en desacuerdo","Muy en desacuerdo"];
+const PTQ_ITEMS=[
+ "Los mismos pensamientos vuelven una y otra vez a mi mente.",
+ "Mis pensamientos se repiten sin que logre avanzar.",
+ "Me cuesta detener esos pensamientos repetitivos.",
+ "Sigo pensando en el problema aunque no me ayude.",
+ "Mis pensamientos repetitivos ocupan mucho espacio mental.",
+ "Me hago las mismas preguntas una y otra vez.",
+ "Mis pensamientos repetitivos aparecen sin querer.",
+ "Me cuesta concentrarme en otra cosa cuando esos pensamientos aparecen.",
+ "Mis pensamientos giran alrededor de problemas o experiencias negativas.",
+ "Intento resolverlo mentalmente, pero termino dando vueltas en lo mismo.",
+ "Esos pensamientos me agotan.",
+ "Pensar asi aumenta mi malestar.",
+ "Siento que esos pensamientos controlan mi atencion.",
+ "Aunque quiero parar, sigo pensando en lo mismo.",
+ "Mis pensamientos repetitivos interfieren con lo que necesito hacer."
+];
+const PTQ_OPTS=["Nunca","Rara vez","A veces","Frecuentemente","Casi siempre"];
+const DJG6_ITEMS=[
+ "Siento un vacio general en mi vida social o afectiva.",
+ "Hay personas suficientes a quienes puedo acudir cuando tengo problemas.",
+ "Extrano tener gente cerca de mi.",
+ "Hay muchas personas en quienes puedo confiar completamente.",
+ "A menudo me siento rechazado/a.",
+ "Hay suficientes personas con quienes me siento cercano/a."
+];
+const DJG6_OPTS=["No","Mas o menos","Si"];
+const DJG6_POSITIVE_ITEMS=new Set([1,3,5]);
+const EFECO21_ITEMS=[
+ "Cometo errores por descuido.",
+ "Me cuesta completar mis tareas sin detenerme a medio camino.",
+ "Tengo dificultades para ejecutar bien tareas que tienen varios pasos.",
+ "Actuo sin pensar, haciendo lo primero que pasa por mi mente.",
+ "Me cuesta esperar con tranquilidad a que llegue mi turno.",
+ "Interrumpo a los demas cuando estan hablando.",
+ "Me cuesta cambiar de una tarea a otra.",
+ "Me perturban los cambios de planes.",
+ "Me cuesta adaptarme a cambios en mis rutinas o planes.",
+ "Me resulta dificil pensar o planificar las cosas con antelacion.",
+ "Olvido revisar mis tareas despues de terminarlas.",
+ "Me quedo en los detalles de una tarea y pierdo el objetivo principal.",
+ "Dejo mis cosas tiradas por todas partes.",
+ "Me cuesta encontrar mis cosas cuando las necesito.",
+ "Voy dejando todo desordenado por donde paso.",
+ "Necesito que alguien me diga que empiece, aunque tenga ganas de hacerlo.",
+ "Me cuesta ponerme a iniciar una tarea con solo proponermelo.",
+ "Me cuesta tener iniciativa para comenzar actividades.",
+ "Me cuesta mantener la atencion en una actividad.",
+ "Me distraigo facilmente.",
+ "Me olvido de las cosas."
+];
+const EFECO21_OPTS=["Nunca","A veces","Con frecuencia","Con mucha frecuencia"];
+const DERS16_DIMS=[
+ {name:"Claridad emocional",items:[0,1]},
+ {name:"Metas / conducta dirigida",items:[2,6,14]},
+ {name:"Control de impulsos",items:[3,7,10]},
+ {name:"No aceptacion emocional",items:[8,9,12]},
+ {name:"Estrategias regulatorias",items:[4,5,11,13,15]}
+];
+const AAQII_DIMS=[
+ {name:"Inflexibilidad psicologica / evitacion experiencial",items:[0,1,2,3,4,5,6]}
+];
+const UPPSP_REVERSE_ITEMS=new Set([2,3,5,7,8,9,12,13,14,15,16,17,19]);
+const UPPSP_DIMS=[
+ {name:"Urgencia negativa",items:[5,7,12,14]},
+ {name:"Falta de premeditacion",items:[3,4,10,11,18]},
+ {name:"Falta de perseverancia",items:[0,1,6]},
+ {name:"Busqueda de sensaciones",items:[8,13,15,17]},
+ {name:"Urgencia positiva",items:[2,9,16,19]}
+];
+const PTQ_DIMS=[
+ {name:"Repeticion / intrusividad",items:[0,1,2,5,6,8,13]},
+ {name:"Improductividad",items:[3,9,11]},
+ {name:"Captura de recursos mentales",items:[4,7,10,12,14]}
+];
+const ACE_DIMS=[
+ {name:"Abuso",items:[0,1,2]},
+ {name:"Negligencia",items:[3,4]},
+ {name:"Disfuncion del hogar",items:[5,6,7,8,9]}
+];
+const WHODAS12_DIMS=[
+ {name:"Cognicion",items:[2,5]},
+ {name:"Movilidad",items:[0,6]},
+ {name:"Autocuidado",items:[7,8]},
+ {name:"Relacionarse",items:[9,10]},
+ {name:"Actividades de vida",items:[1,11]},
+ {name:"Participacion",items:[3,4]}
+];
+const DJG6_DIMS=[
+ {name:"Soledad emocional",items:[0,2,4]},
+ {name:"Soledad social",items:[1,3,5]}
+];
+const EFECO21_DIMS=[
+ {name:"Monitorizacion",items:[0,1,2]},
+ {name:"Inhibicion",items:[3,4,5]},
+ {name:"Flexibilidad cognitiva",items:[6,7,8]},
+ {name:"Planificacion",items:[9,10,11]},
+ {name:"Organizacion",items:[12,13,14]},
+ {name:"Iniciativa",items:[15,16,17]},
+ {name:"Memoria de trabajo",items:[18,19,20]}
+];
+
+/* PID-5-SF (100 items, 0-3) y 25 facetas mapeadas al espectro HiTOP */
+const PID5_ITEMS=[
+`Mucha gente me la tiene jurada.`,`Me parece que actúo totalmente por impulso.`,`Cambio lo que hago en función de lo que los demás quieren.`,`Normalmente hago lo que los otros piensan que debo hacer.`,`Generalmente hago las cosas por impulso, sin pensar en las consecuencias.`,`Aunque sabría hacerlo mejor, no puedo dejar de tomar decisiones precipitadas.`,`Me da igual hacer sufrir a los demás.`,`Siempre hago las cosas en caliente, sin pensarlas.`,`Nada parece interesarme demasiado.`,`La gente me ha dicho que pienso sobre las cosas de una manera muy rara.`,
+`Casi nunca disfruto de la vida.`,`Me enfado fácilmente.`,`No tengo límite a la hora de hacer cosas peligrosas.`,`Para ser sincero/a, soy más importante que los demás.`,`Es extraño, pero a veces objetos cotidianos parecen tener una forma diferente de la habitual.`,`Hago montones de cosas que otros consideran arriesgadas.`,`Me preocupa mucho estar solo/a.`,`A menudo invento cosas sobre mí mismo/a para ayudarme a conseguir lo que quiero.`,`Sigo enfocando las cosas de la misma manera, incluso cuando no funciona.`,`Hago lo que los demás me dicen que haga.`,
+`Me gusta correr riesgos.`,`Los demás parecen pensar que soy bastante raro/a o peculiar.`,`Me encanta atraer la atención de los demás.`,`Me preocupo mucho por cosas horribles que podrían ocurrir.`,`Me cuesta cambiar la manera en la que hago algo, incluso si no está funcionando.`,`El mundo sería mejor si yo estuviera muerto/a.`,`Mantengo la distancia con la gente.`,`Prefiero mantener las relaciones sentimentales fuera de mi vida.`,`Tengo muy mal genio.`,`Me obsesiono con ciertas cosas y no puedo parar.`,
+`A menudo tengo experiencias poco corrientes, como sentir la presencia de alguien que en realidad no está.`,`Se me da bien hacer que la gente haga lo que yo quiero.`,`Siempre estoy preocupándome por algo.`,`Soy mejor que casi todo el mundo.`,`Siempre estoy alerta por si alguien trata de engañarme o perjudicarme.`,`Me cuesta mantener mi cabeza centrada en lo que debo hacer.`,`No estoy muy interesado/a en tener relaciones de pareja.`,`Me emociono fácilmente, a menudo por motivos muy pequeños.`,`Casi nunca me siento feliz con mis actividades cotidianas.`,`Usar mi encanto con los demás me ayuda a conseguir lo que quiero.`,
+`Estar solo/a en la vida me da más miedo que cualquier otra cosa.`,`Me encallo en una manera de hacer las cosas, incluso cuando está claro que no funciona.`,`A menudo soy bastante descuidado/a con mis cosas y las de los demás.`,`Soy una persona muy ansiosa.`,`Me distraigo fácilmente.`,`Parece que siempre reciba un trato injusto de los demás.`,`No dudo en hacer trampa si eso me hace salir adelante.`,`No me gusta pasar tiempo con otra gente.`,`Nunca sé a dónde irán mis emociones en el próximo instante.`,`He visto cosas que no estaban realmente allí.`,
+`No puedo centrarme en las cosas durante mucho tiempo.`,`Me mantengo alejado/a de las relaciones sentimentales.`,`No me interesa hacer amigos.`,`Haría casi cualquier cosa para evitar que alguien me abandone.`,`A veces puedo influir a otra gente simplemente enviándole mis pensamientos.`,`La vida me parece bastante deprimente.`,`Pienso sobre las cosas de una manera rara que no tiene sentido para la mayoría.`,`No me importa que mis acciones perjudiquen a otros.`,`A veces me siento "controlado/a" por pensamientos que son de alguna otra persona.`,`Hago promesas que en realidad no pienso cumplir.`,
+`Nada parece hacerme sentir bien.`,`Me irrito fácilmente por todo tipo de cosas.`,`Hago lo que quiero sin tener en cuenta lo peligroso que pueda ser.`,`A menudo olvido pagar mis facturas.`,`Se me da bien engañar a la gente.`,`Todo me parece sin sentido.`,`Me emociono por cualquier pequeñez.`,`No es tan importante si hiero los sentimientos de otras personas.`,`No valgo nada como persona.`,`Normalmente soy bastante hostil.`,
+`A veces me he esfumado para evitar responsabilidades.`,`Me gusta ser una persona que se hace notar.`,`Siempre estoy atemorizado/a o en ascuas por las cosas malas que pueden ocurrir.`,`Nunca quiero estar solo/a.`,`Mis emociones son impredecibles.`,`No me importan los problemas de los demás.`,`Evito los actos sociales.`,`Merezco un trato especial.`,`Sospecho que incluso mis supuestos "amigos" me engañan a menudo.`,`Ansío llamar la atención.`,
+`A veces pienso que alguien está quitando pensamientos de mi cabeza.`,`A menudo he de tratar con gente que es menos importante que yo.`,`Incluso distracciones mínimas me apartan de mi tarea.`,`Intento hacer lo que otros quieren que haga.`,`Prefiero estar solo/a a tener una pareja sentimental.`,`A menudo tengo pensamientos que tienen sentido para mí pero que otros ven extraños.`,`Utilizo a la gente para conseguir lo que quiero.`,`He tenido algunas experiencias muy extrañas que son difíciles de explicar.`,`Me gusta llamar la atención sobre mí.`,`Las cosas que me rodean a menudo me parecen irreales, o más reales de lo normal.`,
+`Exagero las cosas si eso me beneficia.`,`Me resulta fácil aprovecharme de los demás.`,`Si algo que hago no es totalmente perfecto, simplemente no es aceptable.`,`Aunque ponga de los nervios a los demás, insisto lograr la absoluta perfección en todo lo que hago.`,`Nunca muestro mis emociones a los demás.`,`Sigo intentando hacer las cosas perfectas, incluso cuando ya están todo lo bien que pueden estar.`,`No reacciono demasiado ante cosas que parecen emocionar a otros.`,`Simplemente no puedo soportar que las cosas estén fuera de su sitio.`,`No suelo emocionarme.`,`No muestro intensamente mis emociones.`];
+const PID5_ITEM_IDS=[
+2,4,9,15,16,17,19,22,23,25,
+26,38,39,40,44,48,50,53,60,63,
+67,70,74,79,80,81,82,89,92,100,
+106,107,109,114,117,118,120,122,124,125,
+127,128,129,130,132,133,134,136,138,139,
+144,145,146,149,150,151,152,153,154,156,
+157,158,159,160,162,163,165,166,169,170,
+171,173,174,175,181,183,186,187,190,191,
+192,197,199,202,203,205,206,209,211,217,
+218,219,105,123,167,176,184,196,84,91,
+];
+const PID5_INDEX_BY_ID=new Map(PID5_ITEM_IDS.map((id,idx)=>[id,idx]));
+function pid5Value(ans,id,revItems){
+  const idx=PID5_INDEX_BY_ID.get(id), v=idx==null?undefined:ans[idx];
+  return typeof v==="number" ? (revItems&&revItems.has(id)?3-v:v) : undefined;
+}
+
+const PID5_FACETS=[
+ {name:"Ansiedad",spectrum:"internalizing",summary:"Preocupacion, anticipacion de amenaza, alerta.",items:[79,109,130,174],nm:1.69,sd:0.84},
+ {name:"Labilidad Emocional",spectrum:"internalizing",summary:"Cambios rapidos e intensos del animo.",items:[122,138,165,181],nm:1.46,sd:0.86},
+ {name:"Hostilidad",spectrum:"internalizing",summary:"Irritabilidad, enojo, respuesta agresiva.",items:[38,92,158,170],nm:1.17,sd:0.7},
+ {name:"Perseveracion",spectrum:"internalizing",summary:"Dificultad para soltar ideas o conductas.",items:[60,80,100,128],nm:1.22,sd:0.68},
+ {name:"(Falta de) Afectividad Restringida",spectrum:"internalizing",summary:"Escasa restriccion afectiva; items reversados del PID-5-SF.",items:[84,91,167,184],revItems:[84,91,167,184],nm:0.97,sd:0.69},
+ {name:"Inseguridad por Separacion",spectrum:"internalizing",summary:"Temor a quedarse solo o ser abandonado.",items:[50,127,149,175],nm:1.0,sd:0.81},
+ {name:"Sumision",spectrum:"internalizing",summary:"Ceder ante otros, acomodarse a sus deseos.",items:[9,15,63,202],nm:1.33,sd:0.76},
+ {name:"Anhedonia",spectrum:"detachment",summary:"Poca capacidad de disfrute o interes.",items:[23,26,124,157],nm:1.46,sd:0.8},
+ {name:"Depresividad",spectrum:"detachment",summary:"Pesimismo, tristeza, culpa, inutilidad.",items:[81,151,163,169],nm:1.23,sd:0.83},
+ {name:"Evitacion de la Intimidad",spectrum:"detachment",summary:"Distancia emocional, evita cercania.",items:[89,120,145,203],nm:0.97,sd:0.82},
+ {name:"Suspicacia",spectrum:"detachment",summary:"Expectativa de engano o dano de otros.",items:[2,117,133,190],nm:1.23,sd:0.64},
+ {name:"Retraimiento",spectrum:"detachment",summary:"Aislamiento, poco interes social.",items:[82,136,146,186],nm:1.63,sd:0.84},
+ {name:"Busqueda de Atencion",spectrum:"antagonistic",summary:"Necesidad de ser visto y admirado.",items:[74,173,191,211],nm:0.95,sd:0.75},
+ {name:"Insensibilidad",spectrum:"antagonistic",summary:"Poca preocupacion por el sufrimiento ajeno.",items:[19,153,166,183],nm:0.47,sd:0.47},
+ {name:"Engano",spectrum:"antagonistic",summary:"Mentira o falsedad para obtener ventaja.",items:[53,134,206,218],nm:0.77,sd:0.68},
+ {name:"Grandiosidad",spectrum:"antagonistic",summary:"Superioridad, importancia, merecimiento.",items:[40,114,187,197],nm:0.7,sd:0.61},
+ {name:"Manipulacion",spectrum:"antagonistic",summary:"Usar a otros para fines propios.",items:[107,125,162,219],nm:0.85,sd:0.76},
+ {name:"Distraccion",spectrum:"disinhibited",summary:"Dificultad para sostener la atencion.",items:[118,132,144,199],nm:1.43,sd:0.8},
+ {name:"Impulsividad",spectrum:"disinhibited",summary:"Actuar sin pensar en consecuencias.",items:[4,16,17,22],nm:1.12,sd:0.78},
+ {name:"Irresponsabilidad",spectrum:"disinhibited",summary:"Incumplimiento y poca confiabilidad.",items:[129,156,160,171],nm:0.77,sd:0.64},
+ {name:"(Falta de) Perfeccionismo Rigido",spectrum:"disinhibited",summary:"Bajo control perfeccionista; items reversados del PID-5-SF.",items:[105,123,176,196],revItems:[105,123,176,196],nm:1.12,sd:0.72},
+ {name:"Toma de Riesgos",spectrum:"disinhibited",summary:"Conductas peligrosas con poca cautela.",items:[39,48,67,159],nm:1.19,sd:0.59},
+ {name:"Excentricidad",spectrum:"thought",summary:"Pensar o presentarse de forma rara.",items:[25,70,152,205],nm:1.17,sd:0.81},
+ {name:"Disfuncion Perceptual",spectrum:"thought",summary:"Experiencias perceptivas extranas.",items:[44,154,192,217],nm:0.79,sd:0.58},
+ {name:"Creencias Inusuales",spectrum:"thought",summary:"Ideas extranas poco compartidas.",items:[106,139,150,209],nm:0.77,sd:0.67},
+];
+function computePID5(ans){
+  const out={};
+  PID5_FACETS.forEach(f=>{
+    const revItems=new Set(f.revItems||[]);
+    const vals=f.items.map(id=>pid5Value(ans,id,revItems)).filter(v=>typeof v==="number");
+    if(!vals.length)return;
+    const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+    const z=(mean-f.nm)/f.sd, pct=Math.min(99,Math.max(1,Math.round(ncdf(z)*100)));
+    out[f.name]={mean:Math.round(mean*100)/100,pct,level:pctLevel(pct)};
+  });
+  return out;
+}
+function computePID5Facet(f,vals){
+  const revItems=new Set(f.revItems||[]);
+  const scored=vals.filter(x=>typeof x.value==="number").map(x=>revItems.has(x.id)?3-x.value:x.value);
+  const mean=scored.reduce((a,b)=>a+b,0)/scored.length;
+  const z=(mean-f.nm)/f.sd, pct=Math.min(99,Math.max(1,Math.round(ncdf(z)*100)));
+  return {mean:Math.round(mean*100)/100,pct,level:pctLevel(pct),raw:scored.reduce((a,b)=>a+b,0),max:scored.length*3,label:"Media "+Math.round(mean*100)/100};
+}
+
+/* Fila de SINTOMAS: IDAS-II (18 escalas) + CAPE (3 dimensiones), por espectro */
+/* IDAS-II (99 items, 1-5) y sus 19 escalas (De la Rosa-Caceres et al., 2020) */
+const IDAS99=[
+`He perdido el apetito`,`He tenido poco interes en mis hobbies y actividades habituales`,`Me he sentido optimista`,`He dormido menos de lo normal`,`Me he sentido nervioso, inquieto`,`Me he sentido agotado`,`He sentido dolor en mi pecho`,`Me he sentido deprimido`,`Me ha costado tomar decisiones`,`He estado orgulloso de mi mismo`,
+`He tenido problemas para quedarme dormido`,`Me he sentido furioso`,`He tenido pensamientos suicidas`,`He tenido pensamientos perturbadores de algo malo que me ha sucedido`,`Me he sentido inseguro sabiendo que otros me observaban`,`Me he sentido mareado o aturdido`,`Me he desvelado temprano sin poder recuperar el sueno`,`He estado preocupado por hacer el ridiculo ante otras personas`,`He estado pensando mucho en comida`,`Me he angustiado en lugares publicos con mucha gente`,
+`Me he culpado a mi mismo por diferentes cosas`,`Me he cortado o quemado intencionalmente`,`He sentido que he conseguido muchas cosas`,`He comido sin tener hambre`,`Me he estado despertando mucho mas temprano que lo habitual`,`He tenido menos ganas de comer que lo habitual`,`He tenido realmente ganas de hacer cosas`,`He tenido pesadillas con cosas malas que me han sucedido`,`He dormido mas que lo habitual`,`Me ha costado mucho esfuerzo ponerme en marcha`,
+`He sentido que no encajaba`,`He estado tembloroso o agitado`,`He pensado que el mundo estaria mejor sin mi`,`He tenido recuerdos de algo aterrador que ha pasado`,`He tenido ganas de romper cosas`,`Me he despertado frecuentemente durante la noche`,`Me he sentido enfurecido`,`Me he hecho dano a proposito`,`He sentido que me desmayaba`,`Me he desanimado por cosas`,
+`Me ha costado mirar a los ojos a las personas`,`Me he sentido perturbado pensando en algo malo que me ha sucedido`,`Me ha costado despertarme por las mananas`,`He perdido los nervios y le he gritado a la gente`,`He sentido que mi corazon estaba acelerado`,`He pensado en mi propia muerte`,`Me ha resultado dificil hablar con personas con las que no tengo confianza`,`He estado preocupado gran parte del tiempo`,`He sentido la boca muy seca`,`He sentido esperanza en el futuro`,
+`He dormido muy mal`,`He pensado en hacerme dano`,`He creido que tengo muchas cosas buenas que esperar`,`Me he sentido mucho peor por las mananas que durante el resto del dia`,`Me he sentido somnoliento, adormilado`,`Me ha faltado el aliento`,`He hablado mas despacio que lo habitual`,`He sentido como si estuviera ahogandome`,`He sentido que tengo muchas cosas interesantes que hacer`,`He tenido poco apetito`,
+`He tenido problemas para concentrarme`,`Me he enfadado por cosas sin importancia`,`He comido mas que lo habitual`,`He sentido que he tenido mucha energia`,`He reorganizado cosas para que estuvieran en un orden determinado`,`Me he lavado las manos excesivamente`,`He estado corriendo de una actividad a otra`,`He comprobado las cosas una y otra vez`,`He sentido la necesidad de reorganizar las cosas para que estuvieran de la forma correcta`,`Me he preocupado mucho por los germenes`,
+`He hablado tan rapido que otras personas no podian entenderme`,`Me he sentido euforico sin ningun motivo en especial`,`He evitado pensar en cosas malas de mi pasado`,`He evitado espacios pequenos`,`Me he encontrado a mi mismo revisando cosas, a pesar de que sabia que no era necesario`,`He evitado manosear cosas sucias`,`He sentido que mi cabeza iba a mil por hora`,`Me he sentido como si estuviera en la cima del mundo`,`He evitado situaciones que me traen malos recuerdos`,`He sentido miedo de quedarme atrapado en una multitud`,
+`He sentido la necesidad de revisar algo que ya he hecho`,`He seguido un mismo orden fijo al realizar las tareas cotidianas`,`Mis pensamientos han saltado rapidamente de una idea a otra`,`He sentido ansiedad en espacios pequenos`,`He sentido la obligacion de seguir ciertos rituales`,`Me ha sido dificil tocar cosas que estaban sucias`,`Mis pensamientos han ido tan rapido que me costaba fijar las ideas`,`Me he sentido tan energico que no he podido quedarme quieto`,`He intentado ignorar recuerdos molestos`,`He tenido miedo a los tuneles`,
+`Me he tenido que lavar porque me he sentido contaminado`,`Me he sentido capaz de hacer cosas que otras personas no podian`,`He evitado hablar de malas experiencias de mi pasado`,`He evitado sitios estrechos y cerrados`,`He tenido pequenos rituales o habitos que me han quitado mucho tiempo`,`He evitado usar banos publicos`,`He tenido mucha mas energia que lo habitual`,`He utilizado objetos (p.e. una toalla o un guante) para evitar tocar cosas directamente`,`He sentido ansiedad de hablar en publico`];
+const IDAS_SCALES=[
+ {id:"gendep",name:"Depresion general",sub:"distress",items:[1,2,5,6,8,9,11,13,21,26,27,30,31,40,48,51,52,57,61,64],rev:[27,64]},
+ {id:"disforia",name:"Disforia",sub:"distress",items:[2,5,8,9,21,31,40,48,57,61]},
+ {id:"fatiga",name:"Fatiga",sub:"distress",items:[6,29,30,43,54,55]},
+ {id:"insomnio",name:"Insomnio",sub:"distress",items:[4,11,17,25,36,51]},
+ {id:"suicidio",name:"Suicidio",sub:"distress",items:[13,22,33,38,46,52]},
+ {id:"apebaja",name:"Perdida de apetito",sub:"distress",items:[1,26,60]},
+ {id:"apealta",name:"Aumento de apetito",sub:"distress",items:[19,24,63]},
+ {id:"bienestar",name:"Bienestar",sub:"distress",items:[3,10,23,27,50,53,59,64],positive:true},
+ {id:"irritab",name:"Irritabilidad",sub:"distress",items:[12,35,37,44,62]},
+ {id:"mania",name:"Mania",sub:"mania",items:[67,71,77,83,87]},
+ {id:"euforia",name:"Euforia",sub:"mania",items:[72,78,88,92,97]},
+ {id:"panico",name:"Panico",sub:"fear",items:[7,16,32,39,45,49,56,58]},
+ {id:"ansoc",name:"Ansiedad social",sub:"fear",items:[15,18,20,41,47,99]},
+ {id:"claustro",name:"Claustrofobia",sub:"fear",items:[74,80,84,90,94]},
+ {id:"intrus",name:"Intrusiones traumaticas",sub:"fear",items:[14,28,34,42]},
+ {id:"evit",name:"Evitacion traumatica",sub:"fear",items:[73,79,89,93]},
+ {id:"comprob",name:"Comprobacion",sub:"fear",items:[68,75,81]},
+ {id:"orden",name:"Ordenacion",sub:"fear",items:[65,69,82,85,95]},
+ {id:"limpieza",name:"Limpieza",sub:"fear",items:[66,70,76,86,91,96,98]},
+];
+function computeIDAS(vals){
+  const out={};
+  IDAS_SCALES.forEach(s=>{
+    const rev=new Set(s.rev||[]); let raw=0,k=0;
+    s.items.forEach(n=>{const v=vals[n-1]; if(typeof v==="number"){raw+=rev.has(n)?(6-v):v;k++;}});
+    if(!k){out[s.id]={has:false};return;}
+    const n=s.items.length, base=(raw-n)/(4*n)*100;
+    const pct=Math.round(Math.max(0,Math.min(100, s.positive?100-base:base)));
+    out[s.id]={raw,max:5*n,pct,level:pctLevel(pct),has:true};
+  });
+  return out;
+}
+/* Escalas de adicciones bajo Harmful Substance Use (sim por ahora) */
+const ADDICTIONS=[
+ {name:"AUDIT (alcohol)",sub:"substance",spectrum:"disinhibited",src:"AUDIT"},
+ {name:"DUDIT (drogas)",sub:"substance",spectrum:"disinhibited",src:"DUDIT"},
+ {name:"G-SAS (juego)",sub:"substance",spectrum:"disinhibited",src:"G-SAS"},
+ {name:"FTND (tabaco)",sub:"substance",spectrum:"disinhibited",src:"FTND"},
+];
+const SYMPTOMS=[
+ ...IDAS_SCALES.map(s=>({name:s.name,sub:s.sub,spectrum:"internalizing",src:"IDAS-II",idas:s.id})),
+ ...ADDICTIONS,
+ {name:"PHQ-15",spectrum:"somatoform",sub:"somatoform",src:"PHQ-15"},
+ {name:"CAPE Positiva",spectrum:"thought",sub:"thought",src:"CAPE"},
+ {name:"Despersonalizacion",spectrum:"thought",sub:"thought",src:"DES-M"},
+ {name:"CAPE Negativa",spectrum:"detachment",sub:"detachment",src:"CAPE"},
+ {name:"PCL-R Interpersonal",spectrum:"antagonistic",sub:"antisocial",src:"PCL-R"},
+ {name:"PCL-R Afectiva",spectrum:"antagonistic",sub:"antisocial",src:"PCL-R"},
+ {name:"PCL-R Estilo de vida",spectrum:"antagonistic",sub:"antisocial",src:"PCL-R"},
+ {name:"PCL-R Antisocial",spectrum:"antagonistic",sub:"antisocial",src:"PCL-R"},
+ {name:"Narcisismo Vulnerable",spectrum:"antagonistic",sub:"antisocial",src:"PNI-28"},
+ {name:"Narcisismo Grandioso",spectrum:"antagonistic",sub:"antisocial",src:"PNI-28"},
+ {name:"Restriccion",spectrum:"internalizing",sub:"eating",src:"S-EDE-Q"},
+ {name:"Preoc. alimentaria",spectrum:"internalizing",sub:"eating",src:"S-EDE-Q"},
+ {name:"Preoc. figura",spectrum:"internalizing",sub:"eating",src:"S-EDE-Q"},
+ {name:"Preoc. peso",spectrum:"internalizing",sub:"eating",src:"S-EDE-Q"},
+ {name:"Atracones",spectrum:"internalizing",sub:"eating",src:"BEDS-7"},
+];
+const HIDDEN_FIGURE_SYMPTOMS=new Set([
+ "PHQ-15",
+ "PCL-R Interpersonal",
+ "PCL-R Afectiva",
+ "PCL-R Estilo de vida",
+ "PCL-R Antisocial",
+ "Narcisismo Vulnerable",
+ "Narcisismo Grandioso",
+]);
+function figureSymptomsForSub(sub){
+  return SYMPTOMS.filter(s=>s.sub===sub && !HIDDEN_FIGURE_SYMPTOMS.has(s.name));
+}
+function symScore(s){
+  if(s.idas){const d=(patient().idas||{})[s.idas]; if(d&&d.has) return {pct:d.pct,has:true,level:d.level,raw:d.raw,max:d.max,real:true};}
+  const rs=realScore(s.src,s.name); if(rs) return rs;
+  return simFromSpectrum(s.name,s.spectrum);
+}
+function simFromSpectrum(name,spectrum){
+  const sp=score(spectrum); if(!sp.has) return {pct:0,has:false,level:null};
+  let h=0; for(const c of name) h=(h*37+c.charCodeAt(0))%103;
+  const pct=Math.max(3,Math.min(99, Math.round(sp.pct + (h-51)/2.2)));
+  return {pct,has:true,level:pctLevel(pct)};
+}
+
+/* Jerarquia HiTOP: espectro -> subfactores (hojas). Rasgos PID-5 y Sintomas cuelgan de la hoja. */
+const TREE=[
+ {sp:"somatoform",label:"Somatoform",leaves:[{k:"somatoform",label:"Somatoform"}]},
+ {sp:"internalizing",label:"Internalizing",leaves:[
+   {k:"sexual",label:"Sexual Problems"},{k:"eating",label:"Eating Pathology"},
+   {k:"fear",label:"Fear"},{k:"distress",label:"Distress"},{k:"mania",label:"Mania"}]},
+ {sp:"thought",label:"Thought Disorder",leaves:[{k:"thought",label:"Thought Disorder"}]},
+ {sp:"detachment",label:"Detachment",leaves:[{k:"detachment",label:"Detachment"}]},
+ {sp:"disinhibited",label:"Disinhibited Ext.",leaves:[{k:"substance",label:"Harmful Substance Use"}]},
+ {sp:"antagonistic",label:"Antagonistic Ext.",leaves:[{k:"antisocial",label:"Antisocial Behavior"}]},
+];
+const LEAF_LABEL={sexual:"Sexual Problems",eating:"Eating Pathology",fear:"Fear",distress:"Distress",mania:"Mania",substance:"Harmful Substance Use",antisocial:"Antisocial Behavior",adhd:"Atencion / Hiperactividad",asd:"Autismo"};
+const LEAF_PARENT={sexual:"internalizing",eating:"internalizing",fear:"internalizing",distress:"internalizing",mania:"internalizing",substance:"disinhibited",antisocial:"antagonistic",adhd:"neuro",asd:"neuro"};
+const LEAF_W={sexual:0.7,eating:0.8,fear:1.4,distress:1.6,mania:0.9};  // peso de ancho por columna (default 1)
+const DISORDERS={
+ somatoform:["Trast. de sintomas somaticos","Ansiedad por enfermedad"],
+ fear:["Agorafobia","TOC","Trast. de panico","Fobia social","Fobia especifica"],
+};
+/* Escalas de nivel TRASTORNO (clicables, con barra). Por ahora simuladas. */
+const DX_SCALES=[
+ {name:"TDM",sub:"distress",spectrum:"internalizing",src:"PHQ-9"},
+ {name:"TAG",sub:"distress",spectrum:"internalizing",src:"GAD-7"},
+ {name:"TEPT",sub:"distress",spectrum:"internalizing",src:"PCL-5"},
+ {name:"TP limite",sub:"distress",spectrum:"internalizing",src:"BSL-23"},
+ {name:"Luto complejo",sub:"distress",spectrum:"internalizing",src:"PG-13"},
+ {name:"TEPT complejo",sub:"distress",spectrum:"internalizing",src:"ITQ"},
+ {name:"Bipolar I",sub:"mania",spectrum:"internalizing",src:"ASMS"},
+ {name:"Bipolar II",sub:"mania",spectrum:"internalizing",src:"MDQ"},
+ {name:"Ansiedad por enfermedad",sub:"somatoform",spectrum:"somatoform",src:"SHAI"},
+ {name:"Trast. somatico",sub:"somatoform",spectrum:"somatoform",src:"PHQ-15"},
+ {name:"Fobia social",sub:"fear",spectrum:"internalizing",src:"SPIN"},
+ {name:"TOC",sub:"fear",spectrum:"internalizing",src:"OCI-R"},
+ {name:"Panico",sub:"fear",spectrum:"internalizing",src:"PDSS"},
+];
+const DX_DIMENSIONS={
+ "PHQ-9":[
+  {name:"Cognitivo-afectivo",items:[0,1,5,6,8]},
+  {name:"Somatico",items:[2,3,4,7]}
+ ],
+ "GAD-7":[
+  {name:"Preocupacion incontrolable",items:[1,2]},
+  {name:"Tension / activacion",items:[0,3,4]},
+  {name:"Irritabilidad / amenaza",items:[5,6]}
+ ],
+ "PCL-5":[
+  {name:"Intrusion",items:[0,1,2,3,4]},
+  {name:"Evitacion",items:[5,6]},
+  {name:"Cognicion y afecto negativo",items:[7,8,9,10,11,12,13]},
+  {name:"Hiperactivacion",items:[14,15,16,17,18,19]}
+ ],
+ "BSL-23":[
+  {name:"Disforia / vacio / desesperanza",items:[1,6,7,18,22]},
+  {name:"Autolesion / muerte",items:[4,6,11,17]},
+  {name:"Afecto intenso / control",items:[8,13,19]},
+  {name:"Verguenza / asco / autodesprecio",items:[3,10,12,20]},
+  {name:"Disociacion / paranoia / vulnerabilidad",items:[2,5,16,21]}
+ ],
+ "PG-13":[
+  {name:"Anhelo / dolor de separacion",items:[0,1]},
+  {name:"Persistencia temporal",items:[2]},
+  {name:"Evitacion / aceptacion",items:[3,6]},
+  {name:"Identidad / aturdimiento / bloqueo",items:[4,5,10]},
+  {name:"Confianza / amargura / futuro",items:[7,8,9]},
+  {name:"Sentido / deterioro",items:[11,12]}
+ ],
+ "ITQ":[
+  {name:"Reexperimentacion",items:[0,1]},
+  {name:"Evitacion",items:[2,3]},
+  {name:"Amenaza / hiperalerta",items:[4,5]},
+  {name:"Deterioro TEPT",items:[6,7,8]},
+  {name:"Desregulacion afectiva",items:[9,10]},
+  {name:"Autoconcepto negativo",items:[11,12]},
+  {name:"Dificultad relacional",items:[13,14]},
+  {name:"Deterioro DSO",items:[15,16,17]}
+ ],
+ "ASMS":[
+  {name:"Animo elevado",items:[0]},
+  {name:"Grandiosidad / confianza",items:[1]},
+  {name:"Menor necesidad de sueno",items:[2]},
+  {name:"Verborrea",items:[3]},
+  {name:"Actividad aumentada",items:[4]}
+ ],
+ "MDQ":[
+  {name:"Animo elevado / irritabilidad",items:[0,1]},
+  {name:"Cognitivo-energetico",items:[2,3,4,5]},
+  {name:"Actividad / sociabilidad / sexualidad",items:[6,7,8,9,10]},
+  {name:"Riesgo / consecuencias",items:[11,12]}
+ ],
+ "SHAI":[
+  {name:"Preocupacion y vigilancia corporal",items:[0,1,2,3,4,5]},
+  {name:"Preocupacion cognitiva / reassurance",items:[6,7,8,9,10,11,12,13]},
+  {name:"Consecuencias temidas",items:[14,15,16,17]}
+ ],
+ "PHQ-15":[
+  {name:"Gastrointestinal",items:[0,11,12]},
+  {name:"Dolor",items:[1,2,4,5,10]},
+  {name:"Cardiopulmonar / autonomico",items:[6,8,9]},
+  {name:"Fatiga / sueno",items:[13,14]},
+  {name:"Reproductivo",items:[3]}
+ ],
+ "SPIN":[
+  {name:"Miedo social",items:[0,2,4,9,13,14]},
+  {name:"Evitacion",items:[3,5,7,8,10,11,15]},
+  {name:"Sintomas fisiologicos",items:[1,6,12,16]}
+ ],
+ "OCI-R":[
+  {name:"Lavado",items:[4,10,16]},
+  {name:"Comprobacion",items:[1,7,13]},
+  {name:"Orden",items:[2,8,14]},
+  {name:"Obsesiones",items:[5,11,17]},
+  {name:"Acumulacion",items:[0,6,12]},
+  {name:"Neutralizacion",items:[3,9,15]}
+ ],
+ "PDSS":[
+  {name:"Frecuencia de panico",items:[0]},
+  {name:"Malestar durante ataques",items:[1]},
+  {name:"Ansiedad anticipatoria",items:[2]},
+  {name:"Evitacion agorafobica",items:[3]},
+  {name:"Evitacion interoceptiva",items:[4]},
+  {name:"Interferencia laboral / hogar",items:[5]},
+  {name:"Interferencia social",items:[6]}
+ ],
+ "AUDIT":[
+  {name:"Consumo de alcohol",items:[0,1,2]},
+  {name:"Sintomas de dependencia",items:[3,4,5]},
+  {name:"Consecuencias / dano",items:[6,7,8,9]}
+ ],
+ "DUDIT":[
+  {name:"Consumo de drogas",items:[0,1,2,3]},
+  {name:"Sintomas de dependencia",items:[4,5,6]},
+  {name:"Consecuencias / dano",items:[7,8,9,10]}
+ ],
+ "G-SAS":[
+  {name:"Urgencia por jugar",items:[0,1,2,3]},
+  {name:"Pensamientos / control cognitivo",items:[4,5]},
+  {name:"Conducta / activacion / recompensa",items:[6,7,8]},
+  {name:"Interferencia / malestar",items:[9,10]}
+ ],
+ "FTND":[
+  {name:"Dependencia matutina",items:[0,2,4]},
+  {name:"Dependencia diurna",items:[1,3,5]}
+ ]
+};
+const CAPE_DIMENSIONS={
+ "CAPE Positiva":[
+  {name:"Paranoia",items:[0,1,2,3,4,10]},
+  {name:"Grandiosidad",items:[5,6]},
+  {name:"Pensamiento magico",items:[7,8,9]},
+  {name:"Experiencias bizarras",items:[11,12,13,14,15,18]},
+  {name:"Alucinaciones / percepcion anomala",items:[16,17,19]}
+ ],
+ "CAPE Negativa":[
+  {name:"Retiro social",items:[1,3,13]},
+  {name:"Aplanamiento afectivo",items:[0,2,8,10]},
+  {name:"Avolicion",items:[4,5,6,7,9,11,12]}
+ ]
+};
+const ASRS18_DIMS=[
+ {name:"Inatencion",items:[0,1,2,3,4,5,6,7,8]},
+ {name:"Hiperactividad / impulsividad",items:[9,10,11,12,13,14,15,16,17]}
+];
+const AQ10_DIMS=[
+ {name:"Habilidad social",items:[8]},
+ {name:"Cambio atencional / flexibilidad",items:[2,3]},
+ {name:"Atencion al detalle / patrones",items:[0,1,7]},
+ {name:"Comunicacion",items:[4,5,9]},
+ {name:"Imaginacion / mentalizacion narrativa",items:[6]}
+];
+const CAPE_OPTS=["Nunca","Algunas veces","A menudo","Casi siempre"];
+const CAPE_POSITIVE_ITEMS=[
+ "¿Alguna vez siente como si la gente le tirase indirectas o le dijera cosas con doble sentido?",
+ "¿Alguna vez siente como si alguna noticia de la prensa, radio o television se refiriese o estuviese especialmente dirigida a usted?",
+ "¿Alguna vez siente como si alguna gente no fuera lo que parece?",
+ "¿Alguna vez siente como si le estuvieran persiguiendo de alguna forma?",
+ "¿Alguna vez siente como si hubiera un complot contra usted?",
+ "¿Alguna vez siente como si su destino fuera ser alguien muy importante?",
+ "¿Alguna vez se siente como una persona muy especial o diferente?",
+ "¿Alguna vez piensa que la gente puede comunicarse por telepatia?",
+ "¿Alguna vez siente como si los aparatos electricos pudiesen influir en su forma de pensar?",
+ "¿Cree en el poder de la brujeria, de la magia o del ocultismo?",
+ "¿Alguna vez siente que la gente le mira de forma extrana por su apariencia?",
+ "¿Alguna vez ha sentido como si le estuvieran sacando los pensamientos de su cabeza?",
+ "¿Alguna vez siente que sus pensamientos no le pertenecen?",
+ "¿Alguna vez ha tenido pensamientos tan intensos que le preocupo que otras personas pudieran oirlos?",
+ "¿Alguna vez siente como si sus pensamientos se repitieran en su mente como un eco?",
+ "¿Alguna vez siente como si estuviera bajo el control de alguna fuerza o poder externo a usted?",
+ "¿Alguna vez oye voces cuando esta solo?",
+ "¿Alguna vez oye voces hablando entre ellas cuando esta solo?",
+ "¿Alguna vez siente como si algun miembro de su familia, amigo o conocido hubiese sido suplantado por un doble?",
+ "¿Alguna vez ve cosas, personas o animales que otra gente no puede ver?"
+];
+const CAPE_NEGATIVE_ITEMS=[
+ "¿Alguna vez siente que no es una persona muy animada?",
+ "¿Alguna vez siente que no participa en las conversaciones cuando esta charlando con otras personas?",
+ "¿Alguna vez siente que experimenta pocas o ninguna emocion ante situaciones importantes?",
+ "¿Alguna vez siente que no tiene interes en estar con otras personas?",
+ "¿Alguna vez siente que le falta motivacion para realizar las cosas?",
+ "¿Alguna vez siente que le falta energia?",
+ "¿Alguna vez siente que su mente esta vacia?",
+ "¿Alguna vez siente que se pasa los dias sin hacer nada?",
+ "¿Alguna vez siente que sus sentimientos son poco intensos?",
+ "¿Alguna vez siente que le falta espontaneidad?",
+ "¿Alguna vez siente que sus emociones son poco intensas (embotadas)?",
+ "¿Alguna vez siente que esta descuidando su apariencia o cuidado personal?",
+ "¿Alguna vez siente que no puede acabar las cosas?",
+ "¿Alguna vez siente que tiene pocas aficiones o hobbies?"
+];
+function scoreCape(vals,label){
+  const raw=vals.reduce((t,v)=>t+(v+1),0), min=vals.length, max=vals.length*4;
+  const pct=Math.round((raw-min)/(max-min)*100), mean=Math.round(raw/vals.length*100)/100;
+  const key=label==="Positiva"?"CAPE Positiva":"CAPE Negativa", scores=vals.map(v=>v+1);
+  return {pct,level:pctLevel(pct),raw,max,label:`${label} · media ${mean}`,itemScores:scores,dimensions:dimScores(scores,CAPE_DIMENSIONS[key]||[],1,4)};
+}
+const DESM_OPTS=["Nunca o casi nunca","Alguna vez","Algunas veces","Frecuentemente","Siempre o casi siempre"];
+const DESM_DEPERS_ITEMS=[
+ "Encontrarme vestido con ropa que no recuerdo haber comprado.",
+ "Encontrar nuevas cosas entre mis pertenencias y no recordar haberlas comprado.",
+ "No reconocer a miembros de mi familia o amigos.",
+ "Sentir o pensar que mi cuerpo no me pertenece.",
+ "Tener la sensacion de que las personas o cosas que me rodean no son reales.",
+ "Tener la sensacion de verme desde afuera mientras hago algo, como si yo fuera otra persona que me esta mirando."
+];
+function scoreDesm(vals,label){
+  const raw=vals.reduce((t,v)=>t+(v+1),0), min=vals.length, max=vals.length*5;
+  const pct=Math.round((raw-min)/(max-min)*100), mean=Math.round(raw/vals.length*100)/100;
+  return {pct,level:pctLevel(pct),raw,max,label:`${label} · media ${mean}`};
+}
+/* ===== Motor generico de escalas (items reales + scoring). Cada src se busca aqui. ===== */
+const SCALES={
+ "CAPE":{ label:"CAPE-42 (positiva + negativa)", instr:"Experiencias psiquicas. Responder frecuencia; dimension depresiva excluida.",
+   opts:CAPE_OPTS, items:[...CAPE_POSITIVE_ITEMS,...CAPE_NEGATIVE_ITEMS],
+   score:a=>{const pos=a.slice(0,CAPE_POSITIVE_ITEMS.length), neg=a.slice(CAPE_POSITIVE_ITEMS.length);
+     const ps=scoreCape(pos,"Positiva"), ns=scoreCape(neg,"Negativa");
+     const raw=ps.raw+ns.raw, max=ps.max+ns.max, pct=Math.round(((raw-a.length)/(max-a.length))*100);
+     return {pct,level:pctLevel(pct),raw,max,label:"Positiva + negativa",sub:{"CAPE Positiva":ps.pct,"CAPE Negativa":ns.pct},details:{"CAPE Positiva":ps,"CAPE Negativa":ns}};} },
+ "BSL-23":{ label:"BSL-23 (TLP)", instr:"Ultima semana · cuanto sufrio de cada problema.",
+   opts:["En absoluto","Poco","Bastante","Mucho","Muchisimo"],
+   items:[
+    "Me resultaba dificil concentrarme.","Me senti indefenso/a.","Me senti ausente e incapaz de recordar que estaba haciendo en realidad.",
+    "Senti asco.","Pense en hacerme dano.","Desconfie de los demas.","Creia que no tenia derecho a vivir.","Me sentia solo/a.",
+    "Senti una tension interna estresante.","Senti mucho miedo de imagenes que me vinieron a la cabeza.","Me odie a mi mismo/a.",
+    "Quise castigarme.","Senti verguenza.","Mi humor cambiaba rapidamente entre la ansiedad, la ira y la depresion.",
+    "Escuche voces dentro y fuera de mi cabeza.","Las criticas tuvieron un efecto devastador en mi.","Me senti vulnerable.",
+    "La idea de morirme me causo una cierta fascinacion.","Nada parecia tener sentido para mi.","Tuve miedo de perder el control.",
+    "Me di asco a mi mismo/a.","Tuve la sensacion de salir de mi mismo/a.","Senti que no valia nada."],
+   score:a=>{const total=a.reduce((x,y)=>x+y,0); const pct=Math.round(total/92*100);
+     const level=total>62?"high":total>48?"mid":"low"; const label=total>62?"Muy grave":total>48?"Grave":"Leve";
+     return {pct,level,raw:total,max:92,label};} },
+ "OCI-R":{ label:"OCI-R (TOC)", instr:"Ultimo mes · cuanto malestar le produjo cada experiencia.",
+   opts:["En absoluto","Un poco","Bastante","Mucho","Muchisimo"],
+   items:[
+    "Acumular cosas hasta el punto de que le estorban.","Comprobar las cosas mas a menudo de lo necesario.","Que las cosas no esten bien ordenadas.",
+    "Sentir la necesidad de contar mientras hace cosas.","Tocar un objeto cuando sabe que lo han tocado desconocidos o ciertas personas.",
+    "No poder controlar sus propios pensamientos.","Acumular cosas que no necesita.","Comprobar repetidamente puertas, ventanas, cajones.",
+    "Que los demas cambien la manera en que ha ordenado las cosas.","Tener necesidad de repetir ciertos numeros.",
+    "Tener que asearse o lavarse por el mero hecho de sentirse contaminado/a.","Tener pensamientos desagradables en contra de su voluntad.",
+    "Sentirse incapaz de tirar cosas por temor a necesitarlas despues.","Comprobar repetidamente el gas, el agua y la luz despues de cerrarlos/apagarlos.",
+    "Tener la necesidad de que las cosas esten ordenadas de una determinada manera.","Sentir que existen numeros buenos y malos.",
+    "Lavarse las manos mas a menudo y durante mas tiempo de lo necesario.","Tener pensamientos repugnantes y que le cuesta librarse de ellos."],
+   score:a=>{const total=a.reduce((x,y)=>x+y,0); const pct=Math.round(total/72*100);
+     const level=total>=21?"high":total>=12?"mid":"low"; const label=total>=21?"TOC probable (>=21)":"Bajo umbral";
+     return {pct,level,raw:total,max:72,label};} },
+ "SHAI":{ label:"SHAI (ansiedad por salud)", instr:"Como te has sentido ultimamente.", stem:"Elige la frase que mejor te describe.",
+   groups:[
+    ["No me preocupo por mi salud.","Ocasionalmente me preocupo por mi salud.","Paso mucho tiempo preocupandome por mi salud.","Paso la mayor parte del tiempo preocupandome por mi salud."],
+    ["Noto menos malestares/dolores que la mayoria de personas de mi edad.","Noto tantos malestares/dolores como la mayoria.","Noto mas malestares/dolores que la mayoria.","Soy consciente todo el tiempo de los malestares/dolores de mi cuerpo."],
+    ["Normalmente no soy consciente de sensaciones o cambios corporales.","Algunas veces soy consciente de sensaciones o cambios corporales.","Con frecuencia soy consciente de sensaciones o cambios corporales.","Constantemente soy consciente de sensaciones o cambios corporales."],
+    ["Nunca me cuesta resistir los pensamientos de estar enfermo/a.","La mayor parte del tiempo puedo resistirlos.","Intento resistirlos pero a menudo no puedo.","Son tan fuertes que ya no intento resistirme."],
+    ["Normalmente no temo tener una enfermedad grave.","Algunas veces temo tener una enfermedad grave.","Frecuentemente temo tener una enfermedad grave.","Siempre temo tener una enfermedad grave."],
+    ["No me imagino estando enfermo/a.","Ocasionalmente me imagino estando enfermo/a.","Frecuentemente me imagino estando enfermo/a.","Constantemente me imagino estando enfermo/a."],
+    ["No me cuesta apartar de mi mente los pensamientos sobre mi salud.","Algunas veces me cuesta apartarlos.","Con frecuencia me cuesta apartarlos.","Nada puede apartar esos pensamientos de mi mente."],
+    ["Me alivio permanentemente si el medico dice que no tengo nada.","Al principio me alivio pero a veces vuelven las preocupaciones.","Al principio me alivio pero las preocupaciones siempre vuelven.","No me alivio aunque el medico diga que no tengo nada."],
+    ["Si oigo de una enfermedad, nunca pienso que la tengo.","Si oigo de una enfermedad, a veces pienso que la tengo.","Si oigo de una enfermedad, con frecuencia pienso que la tengo.","Si oigo de una enfermedad, siempre pienso que la tengo."],
+    ["Si tengo una sensacion corporal, rara vez me pregunto que significa.","Con frecuencia me pregunto que significa.","Siempre me pregunto que significa.","Debo saber que significa."],
+    ["Creo que hay un riesgo muy bajo de tener una enfermedad grave.","Creo que hay un riesgo bajo.","Creo que hay un riesgo moderado.","Creo que hay un riesgo alto."],
+    ["Nunca pienso que tengo una enfermedad grave.","A veces pienso que tengo una enfermedad grave.","Con frecuencia pienso que tengo una enfermedad grave.","Por lo general pienso que estoy gravemente enfermo/a."],
+    ["Ante una sensacion corporal inexplicable, no me cuesta pensar en otras cosas.","A veces me cuesta pensar en otras cosas.","Con frecuencia me cuesta pensar en otras cosas.","Siempre me cuesta pensar en otras cosas."],
+    ["Mi familia/amigos dirian que no me preocupo lo suficiente por mi salud.","...que tengo una actitud normal hacia mi salud.","...que me preocupo demasiado por mi salud.","...que soy hipocondriaco/a."],
+    ["Aun con una enfermedad grave, podria disfrutar mucho de otras facetas de mi vida.","Podria disfrutar un poco de otras facetas.","Seria casi incapaz de disfrutar de otras facetas.","Seria completamente incapaz de disfrutar de otras facetas."],
+    ["Con una enfermedad grave, habria alta probabilidad de que la medicina me cure.","Probabilidad moderada de cura.","Probabilidad muy baja de cura.","No habria probabilidad de cura."],
+    ["Una enfermedad grave arruinaria algunos aspectos de mi vida.","Arruinaria muchos aspectos.","Arruinaria casi todos los aspectos.","Arruinaria todos los aspectos."],
+    ["Con una enfermedad grave, no sentiria que pierdo mi dignidad.","Sentiria que pierdo un poco de dignidad.","Sentiria que pierdo bastante dignidad.","Sentiria que pierdo totalmente mi dignidad."]],
+   score:a=>{const total=a.reduce((x,y)=>x+y,0); const pct=Math.round(total/54*100);
+     const level=total>=22?"high":total>=12?"mid":"low"; const label=total>=22?"Ansiedad por salud elevada":"Bajo umbral";
+     return {pct,level,raw:total,max:54,label};} },
+ "HCL-32":{ label:"HCL-32 (hipomania)", instr:"Recuerda un periodo de animo elevado: en ese estado...", opts:["No","Si"],
+   items:[
+    "Necesito dormir menos.","Me siento con mas energia y mas activo/a.","Me siento mas seguro/a de mi mismo/a.","Disfruto mas de mi trabajo.",
+    "Soy mas sociable (mas llamadas, salgo mas).","Quiero viajar y viajo mas.","Suelo conducir mas rapido o de forma mas arriesgada.","Gasto mas o demasiado dinero.",
+    "Me arriesgo mas en mi vida diaria.","Fisicamente estoy mas activo/a (deporte, etc.).","Planeo mas actividades o proyectos.","Tengo mas ideas, soy mas creativo/a.",
+    "Soy menos timido/a o inhibido/a.","Llevo ropa o maquillaje mas llamativo y extravagante.","Quiero quedar y quedo con mas gente.","Estoy mas interesado/a en el sexo o tengo mayor deseo sexual.",
+    "Flirteo mas o soy mas activo/a sexualmente.","Hablo mas.","Pienso mas deprisa.","Bromeo mas o hago mas juegos de palabras.",
+    "Me distraigo mas facilmente.","Me embarco en muchas cosas nuevas.","Mis pensamientos saltan de un tema a otro.","Hago las cosas mas rapido o mas facilmente.",
+    "Estoy mas impaciente o me irrito mas facilmente.","Puedo ser agotador/a o irritante para los demas.","Me meto en mas broncas.","Mi animo es mas elevado, mas optimista.",
+    "Tomo mas cafe.","Fumo mas cigarrillos.","Bebo mas alcohol.","Tomo mas farmacos (tranquilizantes, ansioliticos, estimulantes...)."],
+   score:a=>{const total=a.reduce((x,y)=>x+y,0); const pct=Math.round(total/32*100);
+     const level=total>=14?"high":total>=8?"mid":"low"; const label=total>=14?"Probable espectro bipolar (>=14)":"Bajo umbral";
+     return {pct,level,raw:total,max:32,label};} },
+ "ASMS":{ label:"ASMS (mania, Altman)", instr:"Ultima semana.", stem:"Elige la frase que mejor te describe.",
+   groups:[
+    ["No me siento mas alegre o animado de lo habitual.","Ocasionalmente me siento mas alegre o animado.","A menudo me siento mas alegre o animado.","Me siento mas alegre o animado la mayor parte del tiempo.","Me siento mas alegre o animado todo el tiempo."],
+    ["No me siento mas seguro de mi mismo de lo habitual.","Ocasionalmente me siento mas seguro de mi mismo.","A menudo me siento mas seguro de mi mismo.","La mayor parte del tiempo me siento mas seguro de mi mismo.","Me siento extremadamente seguro de mi mismo todo el tiempo."],
+    ["No necesito dormir menos de lo habitual.","Ocasionalmente necesito dormir menos.","A menudo necesito dormir menos.","Frecuentemente necesito dormir menos.","Puedo funcionar todo el dia y la noche sin dormir ni cansarme."],
+    ["No estoy mas hablador de lo habitual.","Ocasionalmente estoy mas hablador.","A menudo estoy mas hablador.","Frecuentemente estoy mas hablador.","Hablo constantemente y no me pueden interrumpir."],
+    ["No he estado mas activo de lo normal.","Ocasionalmente he estado mas activo.","A menudo he estado mas activo.","Frecuentemente he estado mas activo.","He estado constantemente activo."]],
+   score:a=>{const total=a.reduce((x,y)=>x+y,0);const pct=Math.round(total/20*100);const level=total>=6?"high":total>=3?"mid":"low";const label=total>=6?"Probable hipomania/mania (>=6)":"Bajo umbral";return{pct,level,raw:total,max:20,label};} },
+ "MDQ":{ label:"MDQ (espectro bipolar)", instr:"Un periodo en que no era el/la mismo/a de siempre y...", opts:["No","Si"],
+   items:[
+    "Se sintio tan bien o euforico/a que otros pensaron que no era usted, o se metio en problemas.","Estaba tan irritable que gritaba o provocaba peleas o discusiones.","Se sentia mucho mas seguro/a de si mismo/a de lo habitual.","Dormia mucho menos y no necesitaba dormir mas.","Estaba mucho mas hablador/a o hablaba mas rapido de lo habitual.","Le pasaban ideas muy rapido por la cabeza o no podia ir mas despacio.","Se distraia tan facilmente que le costaba concentrarse o seguir con lo que hacia.","Tenia mucha mas energia de lo habitual.","Era mucho mas activo/a o hacia muchas mas cosas de lo habitual.","Era mucho mas sociable o abierto/a (p. ej. llamaba a amigos de madrugada).","Estaba mucho mas interesado/a en el sexo de lo habitual.","Hacia cosas inusuales o que otros considerarian excesivas, insensatas o arriesgadas.","El gasto de dinero le creo problemas a usted o a su familia."],
+   score:a=>{const total=a.reduce((x,y)=>x+y,0);const pct=Math.round(total/13*100);const level=total>=7?"high":total>=4?"mid":"low";const label=total>=7?"Cribado positivo (>=7)":"Bajo umbral";return{pct,level,raw:total,max:13,label};} },
+ "ITQ":{ label:"ITQ (TEPT / TEPT complejo)", instr:"Ultimo mes · respecto a la experiencia que mas le perturba.", opts:["Nada","Poco","Moderadamente","Mucho","Extremadamente"],
+   items:[
+    "Tener suenos perturbadores que reproducen parte de la experiencia o se relacionan con ella.","Tener imagenes o recuerdos intensos en que siente que la experiencia ocurre de nuevo aqui y ahora.","Evitar pensamientos, sentimientos o sensaciones internas que le recuerden la experiencia.","Evitar personas, lugares, actividades o situaciones que le recuerden la experiencia.","Estar super alerta, vigilante o en guardia.","Sentirse sobresaltado/a o asustarse facilmente.","¿Han afectado sus relaciones o su vida social?","¿Han afectado su trabajo o su capacidad para trabajar?","¿Han afectado otras areas importantes de su vida?","Cuando estoy molesto/a, tardo bastante en calmarme.","Me siento desconectado/a o emocionalmente apagado/a.","Me siento como un/a fracasado/a.","Siento que no valgo nada.","Me siento distante o alejado/a de las personas.","Me resulta dificil estar emocionalmente cercano/a a la gente.","¿Han generado preocupacion sobre sus relaciones o vida social?","¿Han afectado su trabajo o capacidad para trabajar?","¿Han afectado otras areas importantes de su vida?"],
+   score:a=>{const g=i=>a[i]||0; const sym=[0,1,2,3,4,5,9,10,11,12,13,14].reduce((t,i)=>t+g(i),0); const pct=Math.round(sym/48*100);
+     const re=g(0)>2||g(1)>2, ev=g(2)>2||g(3)>2, am=g(4)>2||g(5)>2, pdf=g(6)>2||g(7)>2||g(8)>2;
+     const da=g(9)>2||g(10)>2, an=g(11)>2||g(12)>2, ar=g(13)>2||g(14)>2, ddf=g(15)>2||g(16)>2||g(17)>2;
+     const ptsd=re&&ev&&am&&pdf, dso=da&&an&&ar&&ddf, cptsd=ptsd&&dso;
+     const label=cptsd?"Cumple TEPT complejo":ptsd?"Cumple TEPT":"No cumple criterios"; const level=(ptsd||cptsd)?"high":pctLevel(pct);
+     return{pct,level,raw:sym,max:48,label};} },
+ "PG-13":{ label:"PG-13 (duelo prolongado)", instr:"Sobre la perdida de su ser querido.",
+   items:[
+    "¿Cuantas veces ha deseado intensamente que el/ella estuviera, o ha recordado su ausencia con profunda tristeza?","¿Cuantas veces ha tenido momentos de intenso sufrimiento o dolor relacionados con la muerte?","Pasados 6 meses, ¿continua experimentando los sintomas de 1 y 2, al menos una vez al dia?","¿Cuantas veces ha evitado lo que le recuerda que su ser querido fallecio?","¿Cuantas veces se ha sentido confuso/a, aturdido/a o paralizado/a por su perdida?","¿Se siente confundido/a sobre su papel en la vida o como si una parte de usted hubiera muerto?","¿Le cuesta aceptar la perdida?","¿Le cuesta confiar en los demas desde la perdida?","¿Siente amargura por su perdida?","¿Siente que seguir adelante (nuevos amigos, intereses) sera mas dificil ahora?","¿Se siente emocionalmente bloqueado/a desde su perdida?","¿Siente que la vida no tiene sentido?","¿Ha visto reducida significativamente su vida social, laboral u otras areas importantes?"],
+   itemOpts:(()=>{const F=["Nunca","Al menos 1 vez/mes","Al menos 1 vez/semana","Al menos 1 vez/dia","Varias veces/dia"],I=["No, en absoluto","Un poco","Bastante","Mucho","Muchisimo"],YN=["No","Si"];return [F,F,YN,F,F,I,I,I,I,I,I,I,YN];})(),
+   score:a=>{const lik=[0,1,3,4,5,6,7,8,9,10,11]; const sum=lik.reduce((t,i)=>t+((a[i]||0)+1),0); const pct=Math.round((sum-11)/44*100);
+     const B=(a[0]||0)>=3&&(a[1]||0)>=3, C=(a[2]||0)===1, D=[3,4,5,6,7,8,9,10,11].filter(i=>(a[i]||0)>=3).length>=5, E=(a[12]||0)===1;
+     const dx=B&&C&&D&&E; const label=dx?"Cumple duelo prolongado":"No cumple criterios"; const level=dx?"high":pctLevel(pct);
+     return{pct,level,raw:sum,max:55,label};} },
+ "PDSS":{ label:"PDSS-SR (panico)", instr:"Ultima semana.", stem:"Elige la opcion que mejor te describe.",
+   groups:[
+    ["Sin episodios de panico ni sintomas limitados.","Sin ataques completos; no mas de 1 ataque de sintoma limitado por dia.","1 o 2 ataques completos y/o multiples ataques de sintomas limitados por dia.","Mas de 2 ataques completos, pero no mas de 1 por dia en promedio.","Ataques completos mas de una vez al dia."],
+    ["Nada angustiante.","Ligeramente angustiante.","Moderadamente angustiante.","Severamente angustiante.","Extremadamente angustiante."],
+    ["De nada.","Ocasionalmente o solo levemente.","Con frecuencia o moderadamente.","Muy a menudo o de forma muy perturbadora.","Casi constantemente y de forma incapacitante."],
+    ["Sin miedo ni evitacion.","Miedo/evitacion ocasional, manejable; poca modificacion del estilo de vida.","Miedo/evitacion notable pero manejable.","Evitacion extensa; modificacion sustancial del estilo de vida.","Miedo/evitacion incapacitante; no se realizan tareas importantes."],
+    ["Sin miedo ni evitacion por sensaciones fisicas.","Evitacion ocasional, poca angustia.","Evitacion notable pero manejable.","Evitacion extensa; modificacion sustancial o interferencia.","Evitacion generalizada e incapacitante."],
+    ["Sin interferencia con trabajo/hogar.","Ligera interferencia; podia hacer casi todo.","Interferencia significativa pero lograba lo necesario.","Deterioro sustancial; muchas cosas importantes no podia hacer.","Deterioro extremo e incapacitante."],
+    ["Sin interferencias sociales.","Ligera interferencia social; podia hacer casi todo.","Interferencia significativa pero lograba la mayoria con esfuerzo.","Deterioro sustancial; muchas cosas sociales no podia hacer.","Deterioro extremo e incapacitante."]],
+   score:a=>{const total=a.reduce((x,y)=>x+y,0);const pct=Math.round(total/28*100);const level=total>=8?"high":total>=5?"mid":"low";const label=total>=8?"Cribado positivo (>=8)":"Bajo umbral";return{pct,level,raw:total,max:28,label};} },
+ "BEDS-7":{ label:"BEDS-7 (atracon)", instr:"Ultimos 3 meses.",
+   items:[
+    "¿Tuvo algun episodio de comer en exceso (mas de lo normal en un periodo similar)?","¿Se siente angustiado/a por sus episodios de exceso de comida?","Durante sus atracones, ¿con que frecuencia sintio que no tenia control sobre su alimentacion?","¿Con que frecuencia siguio comiendo aunque no tenia hambre?","¿Con que frecuencia se avergonzo de lo mucho que comio?","¿Con que frecuencia se sintio disgustado/a consigo mismo/a o culpable despues?","¿Con que frecuencia se sintio muy angustiado/a por los atracones?"],
+   itemOpts:(()=>{const YN=["No","Si"],F=["Nunca","A veces","A menudo","Casi siempre"];return [YN,YN,F,F,F,F,F];})(),
+   score:a=>{const binge=(a[0]||0)===1, distress=(a[1]||0)===1; const f=[2,3,4,5,6].reduce((t,i)=>t+(a[i]||0),0);
+     const pct=binge?Math.round((f/15)*100):0; const level=(binge&&distress&&f>=6)?"high":binge?"mid":"low"; const label=(binge&&distress)?"Cribado positivo de atracon":"Bajo umbral";
+     return{pct,level,raw:f,max:15,label};} },
+ "PHQ-15":{ label:"PHQ-15 (sintomas somaticos)", instr:"Ultimas 2 semanas · cuanto le ha molestado.", opts:["No me ha molestado","Un poco","Mucho"],
+   items:[
+    "Dolor de estomago.","Dolor de espalda.","Dolor en brazos, piernas o articulaciones.","(Mujeres) dolores menstruales o problemas con la regla.","Dolores de cabeza.","Dolor en el pecho.","Mareos.","Desmayos.","Sentir el corazon acelerado o con palpitaciones.","Falta de aire.","Dolor o problemas durante las relaciones sexuales.","Estrenimiento, diarrea o problemas intestinales.","Nauseas, gases o indigestion.","Sentirse cansado/a o con poca energia.","Problemas para dormir."],
+   score:a=>{const total=a.reduce((x,y)=>x+y,0);const pct=Math.round(total/30*100);const level=total>=15?"high":total>=10?"mid":"low";const label=total>=15?"Alto":total>=10?"Medio":total>=5?"Bajo":"Minimo";return{pct,level,raw:total,max:30,label};} },
+ "PCL-R":{ label:"PCL-R (psicopatia, Hare)", instr:"Heteroaplicada (entrevista + expediente). 0=no aplicable, 1=parcial, 2=totalmente.", opts:["No aplicable (0)","Parcialmente (1)","Totalmente (2)"],
+   items:[
+    "Locuacidad / encanto superficial.","Egocentrismo / sensacion grandiosa de la autovalia.","Necesidad de estimulacion / tendencia al aburrimiento.","Mentira patologica.","Direccion / manipulacion.","Falta de remordimiento y culpabilidad.","Escasa profundidad de los afectos.","Insensibilidad / falta de empatia.","Estilo de vida parasito.","Falta de control conductual.","Conducta sexual promiscua.","Problemas de conducta precoces.","Falta de metas realistas a largo plazo.","Impulsividad.","Irresponsabilidad.","Incapacidad para aceptar la responsabilidad de las propias acciones.","Varias relaciones maritales breves.","Delincuencia juvenil.","Revocacion de la libertad condicional.","Versatilidad criminal."],
+   score:a=>{const sum=ix=>ix.reduce((t,i)=>t+(a[i]||0),0); const fp=(ix)=>Math.round(sum(ix)/(2*ix.length)*100);
+     const total=a.reduce((x,y)=>x+(y||0),0); const pct=Math.round(total/40*100); const level=total>=30?"high":total>=20?"mid":"low";
+     return {pct,level,raw:total,max:40,label:total>=30?"Psicopatia probable (>=30)":"Bajo umbral",
+       sub:{"PCL-R Interpersonal":fp([0,1,3,4]),"PCL-R Afectiva":fp([5,6,7,15]),"PCL-R Estilo de vida":fp([2,8,12,13,14]),"PCL-R Antisocial":fp([9,11,17,18,19])}};} },
+ "PNI-28":{ label:"PNI-28 (narcisismo patologico)", instr:"Que tanto te describe cada frase.", opts:["0 · nada","1","2","3","4","5 · mucho"],
+   items:[
+    "Puedo hacer que la gente haga lo que yo quiero sin que se den cuenta.","A veces devaluo a las personas a las que solia admirar.","Me cuesta mucho admitir ante los demas que necesito su ayuda.","Mi autoestima se ve muy afectada cuando los demas me critican.","A menudo fantaseo con lograr un exito o reconocimiento extraordinario.","Suelo sacrificar mis necesidades para ayudar a otros, lo que demuestra mi nobleza.","Me enojo mucho cuando la gente no me da el respeto que merezco.","Se me da bien convencer a los demas para que me ayuden a lograr mis metas.","Cuando alguien que admiro me decepciona, pierdo toda la fe en esa persona.","Intento ocultar mis defectos para que no me vean como alguien debil.","A menudo me siento ansioso/a al entregar un trabajo por temor a la desaprobacion.","Me imagino siendo una persona de gran influencia y poder.","Me enorgullece que me vean como una persona extremadamente generosa y sacrificada.","Me enfurezco cuando los demas no reconocen mis necesidades o deseos de inmediato.","Necesito que los demas me reconozcan para sentirme bien conmigo mismo/a.","A veces utilizo a las personas como un medio para conseguir lo que quiero.","Prefiero estar solo/a antes que dejar que otros vean mis fracasos.","Suelo perder el interes en mis metas cuando me doy cuenta de que no sere el mejor.","Con frecuencia tengo fantasias en las que soy admirado/a por todo el mundo.","A veces hago cosas por los demas solo para que vean lo buena persona que soy.","Siento un profundo resentimiento cuando otros consiguen cosas que yo deberia tener.","Se como manejar las situaciones interpersonales para salir beneficiado/a.","Cuando los demas no se fijan en mi, tiendo a dudar de mi propio valor.","Me resulta dificil compartir mis verdaderos sentimientos por miedo a ser juzgado/a.","Tiendo a pensar que los demas no son tan inteligentes o capaces como parecen.","Me gusta sonar despierto/a con hazanas que dejen huella en la historia.","Utilizo mis actos de ayuda para ganarme el respeto y la admiracion de otros.","Me cuesta controlar mi ira cuando las cosas no se hacen a mi manera."],
+   score:a=>{const mean=ix=>ix.reduce((t,i)=>t+(a[i]||0),0)/ix.length; const V=[1,2,3,6,8,9,10,13,14,16,17,20,22,23,24,27], G=[0,4,5,7,11,12,15,18,19,21,25,26];
+     const vm=mean(V), gm=mean(G); const vp=Math.round(vm/5*100), gp=Math.round(gm/5*100); const pct=Math.round((vp+gp)/2);
+     return {pct,level:pctLevel(pct),raw:Math.round((vm+gm)/2*100)/100,max:5,label:"Vulnerable "+vm.toFixed(1)+" / Grandioso "+gm.toFixed(1),
+       sub:{"Narcisismo Vulnerable":vp,"Narcisismo Grandioso":gp}};} },
+ "S-EDE-Q":{ label:"S-EDE-Q (subescalas)", instr:"Ultimos 28 dias · cuantos dias / en que grado.", opts:["0","1","2","3","4","5","6"],
+   items:[
+    "Limitar deliberadamente la cantidad de comida para influir en tu silueta o peso.","Periodos de 8 o mas horas sin comer para influir en tu silueta o peso.","Evitar comer alimentos que te gustan para influir en tu silueta o peso.","Seguir reglas determinadas en tu alimentacion para influir en tu silueta o peso.","Desear que tu estomago este vacio.","Pensar en alimentos o calorias interfirio con tu capacidad de concentrarte.","Miedo de perder el control sobre la comida.","Comer en secreto (exceptuando atracones).","Deseo claro de tener el vientre plano.","Pensar en la silueta o el peso interfirio con tu capacidad de concentrarte.","Temor claro de engordar o convertirte en obeso/a.","Te has sentido gordo/a.","Fuerte deseo de perder peso.","Sentirte culpable despues de comer por su efecto en tu silueta y peso.","Ha influido tu peso en como te juzgas como persona.","Ha influido tu figura en como te juzgas como persona.","Te molestaria pesarte una vez por semana los proximos 3 meses.","Insatisfaccion por tu peso.","Insatisfaccion por tu figura.","Preocupacion por que otros te vean comer.","Incomodidad al ver tu cuerpo (espejo, escaparate, al desvestirte/ducharte).","Incomodidad cuando otros ven tu cuerpo (vestuarios, nadando, ropa ajustada)."],
+   score:a=>{const nums=[1,2,3,4,5,6,7,9,10,11,12,13,14,15,29,30,31,32,33,34,35,36]; const by={}; nums.forEach((n,i)=>by[n]=a[i]||0);
+     const mean=arr=>arr.reduce((t,n)=>t+(by[n]||0),0)/arr.length;
+     const R=mean([1,2,3,4,5]),EC=mean([6,7,9,15,34]),SC=mean([10,11,12,13,30,33,35,36]),WC=mean([11,14,29,31,32]); const gs=(R+EC+SC+WC)/4;
+     return {pct:Math.round(gs/6*100),level:pctLevel(Math.round(gs/6*100)),raw:Math.round(gs*100)/100,max:6,label:"Global "+gs.toFixed(1)+" (sig. clinica >=4.0)",
+       sub:{"Restriccion":Math.round(R/6*100),"Preoc. alimentaria":Math.round(EC/6*100),"Preoc. figura":Math.round(SC/6*100),"Preoc. peso":Math.round(WC/6*100)}};} },
+ "PHQ-9":{ label:"PHQ-9 (depresion)", instr:"Ultimas 2 semanas, con que frecuencia le han molestado.", opts:["Nunca","Varios dias","Mas de la mitad de los dias","Casi todos los dias"],
+   items:["Poco interes o placer en hacer las cosas.","Sentirse desanimado/a, deprimido/a o sin esperanza.","Problemas para dormir, mantenerse dormido/a, o dormir demasiado.","Sentirse cansado/a o con poca energia.","Poco apetito o comer en exceso.","Sentirse mal consigo mismo/a, sentir que es un fracaso o que le ha fallado a su familia.","Problemas para concentrarse (leer, ver television).","Moverse o hablar muy despacio, o estar muy agitado/a e inquieto/a.","Pensamientos de que estaria mejor muerto/a o de hacerse dano."],
+   score:a=>{const total=a.reduce((s,v)=>s+(v||0),0);const pct=Math.round(total/27*100);const level=total>=15?"high":total>=10?"mid":"low";const label=total>=20?"Grave":total>=15?"Moderadamente grave":total>=10?"Moderada":total>=5?"Leve":"Minima";return{pct,level,raw:total,max:27,label};} },
+ "GAD-7":{ label:"GAD-7 (ansiedad)", instr:"Ultimas 2 semanas, con que frecuencia le han molestado.", opts:["Nunca","Varios dias","Mas de la mitad de los dias","Casi todos los dias"],
+   items:["Sentirse nervioso/a, ansioso/a o muy alterado/a.","No poder dejar de preocuparse o no poder controlar la preocupacion.","Preocuparse demasiado por diferentes cosas.","Dificultad para relajarse.","Estar tan inquieto/a que es dificil permanecer sentado/a.","Irritarse o enojarse con facilidad.","Sentir miedo como si fuera a suceder algo terrible."],
+   score:a=>{const total=a.reduce((s,v)=>s+(v||0),0);const pct=Math.round(total/21*100);const level=total>=15?"high":total>=10?"mid":"low";const label=total>=15?"Grave":total>=10?"Moderada":total>=5?"Leve":"Minima";return{pct,level,raw:total,max:21,label};} },
+ "PCL-5":{ label:"PCL-5 (TEPT DSM-5)", instr:"Ultimo mes, cuanto le ha afectado cada problema (experiencia estresante).", opts:["Nada","Un poco","Moderadamente","Bastante","Extremadamente"],
+   items:["Recuerdos angustiantes repetidos e involuntarios de la experiencia.","Suenos perturbadores relacionados con la experiencia.","Sentir de repente como si la experiencia ocurriera de nuevo.","Sentirse muy alterado/a cuando algo le recuerda la experiencia.","Reacciones fisicas intensas ante recordatorios (palpitaciones, sudor, falta de aire).","Evitar recuerdos, pensamientos o sentimientos relacionados con la experiencia.","Evitar recordatorios externos (personas, lugares, actividades, objetos).","Dificultad para recordar partes importantes de la experiencia.","Creencias negativas fuertes sobre usted, los demas o el mundo.","Culparse a si mismo/a o a otros por la experiencia o lo que paso.","Sentimientos negativos fuertes (miedo, horror, enojo, culpa, verguenza).","Perder interes en actividades que antes disfrutaba.","Sentirse distante o alejado/a de los demas.","Dificultad para sentir emociones positivas.","Irritabilidad, ataques de ira o conducta agresiva.","Tomar demasiados riesgos o hacer cosas que podrian danarle.","Estar en alerta maxima, en guardia.","Sobresaltarse o asustarse facilmente.","Dificultad para concentrarse.","Problemas para dormir."],
+   score:a=>{const total=a.reduce((s,v)=>s+(v||0),0);const pct=Math.round(total/80*100);const level=total>=33?"high":total>=20?"mid":"low";const label=total>=33?"Probable TEPT (>=33)":"Bajo umbral";return{pct,level,raw:total,max:80,label};} },
+ "AUDIT":{ label:"AUDIT (alcohol)", instr:"Consumo de alcohol en el ultimo ano.",
+   items:["¿Con que frecuencia consume alguna bebida alcoholica?","¿Cuantas consumiciones suele realizar en un dia de consumo normal?","¿Con que frecuencia toma 6 o mas bebidas en una sola ocasion?","¿Con que frecuencia no pudo parar de beber una vez que empezo?","¿Con que frecuencia no hizo lo que se esperaba de usted por haber bebido?","¿Con que frecuencia bebio en ayunas para recuperarse tras beber mucho?","¿Con que frecuencia tuvo remordimientos o culpa tras beber?","¿Con que frecuencia no pudo recordar lo que paso la noche anterior por beber?","¿Usted u otra persona ha resultado herido porque usted habia bebido?","¿Algun familiar, amigo o profesional ha mostrado preocupacion o le ha sugerido dejar de beber?"],
+   itemOpts:[["Nunca","Una vez al mes o menos","2-4 veces al mes","2-3 veces/semana","4+ veces/semana"],["1 o 2","3 o 4","5 o 6","7 a 9","10 o mas"],["Nunca","Menos de 1 vez/mes","Mensualmente","Semanalmente","A diario o casi"],["Nunca","Menos de 1 vez/mes","Mensualmente","Semanalmente","A diario o casi"],["Nunca","Menos de 1 vez/mes","Mensualmente","Semanalmente","A diario o casi"],["Nunca","Menos de 1 vez/mes","Mensualmente","Semanalmente","A diario o casi"],["Nunca","Menos de 1 vez/mes","Mensualmente","Semanalmente","A diario o casi"],["Nunca","Menos de 1 vez/mes","Mensualmente","Semanalmente","A diario o casi"],["No","Si, pero no en el ultimo ano","Si, en el ultimo ano"],["No","Si, pero no en el ultimo ano","Si, en el ultimo ano"]],
+   score:a=>{const m=a.map((v,i)=>i>=8?(v||0)*2:(v||0));const total=m.reduce((x,y)=>x+y,0);const pct=Math.round(total/40*100);const level=total>=20?"high":total>=8?"mid":"low";const label=total>=20?"Posible dependencia":total>=16?"Consumo perjudicial":total>=8?"Consumo de riesgo":"Bajo riesgo";return{pct,level,raw:total,max:40,label};} },
+ "DUDIT":{ label:"DUDIT (drogas)", instr:"Uso de drogas (distintas al alcohol) en el ultimo ano.",
+   items:["¿Con que frecuencia usa alguna droga distinta al alcohol?","¿Usa mas de una droga diferente el mismo dia?","¿Cuantas veces toma drogas en un dia tipico de consumo?","¿Con que frecuencia se intoxica fuertemente con drogas?","¿Con que frecuencia tuvo un fuerte deseo de consumir drogas?","¿Con que frecuencia no cumplio responsabilidades por consumir drogas?","¿Con que frecuencia necesito consumir por la manana para encontrarse bien?","¿Con que frecuencia tuvo culpa o remordimiento por su consumo?","¿Con que frecuencia tuvo problemas de memoria por las drogas?","¿Usted u otra persona resulto herida por su uso de drogas?","¿Alguien o un profesional mostro preocupacion o le aconsejo reducir el consumo?"],
+   itemOpts:[["Nunca","1 vez/mes o menos","2-4 veces/mes","2-3 veces/semana","4+ veces/semana"],["Nunca","1 vez/mes o menos","2-4 veces/mes","2-3 veces/semana","A diario o casi"],["1 o 2","3 o 4","5 o 6","7 a 9","10 o mas"],["Nunca","Menos de 1 vez/mes","Mensualmente","Semanalmente","A diario o casi"],["Nunca","Menos de 1 vez/mes","Mensualmente","Semanalmente","A diario o casi"],["Nunca","Menos de 1 vez/mes","Mensualmente","Semanalmente","A diario o casi"],["Nunca","Menos de 1 vez/mes","Mensualmente","Semanalmente","A diario o casi"],["Nunca","Menos de 1 vez/mes","Mensualmente","Semanalmente","A diario o casi"],["Nunca","Menos de 1 vez/mes","Mensualmente","Semanalmente","A diario o casi"],["No","Si, pero no en el ultimo ano","Si, en el ultimo ano"],["No","Si, pero no en el ultimo ano","Si, en el ultimo ano"]],
+   score:a=>{const m=a.map((v,i)=>i>=9?(v||0)*2:(v||0));const total=m.reduce((x,y)=>x+y,0);const pct=Math.round(total/44*100);const level=total>=25?"high":total>=6?"mid":"low";const label=total>=25?"Probable dependencia":total>=6?"Consumo problematico":"Bajo umbral";return{pct,level,raw:total,max:44,label};} },
+ "FTND":{ label:"FTND (nicotina)", instr:"Habito tabaquico actual.",
+   items:["¿Cuanto tiempo pasa entre que se levanta y fuma el primer cigarrillo?","¿Le cuesta no fumar en lugares prohibidos (hospital, cine)?","¿A que cigarrillo le costaria mas renunciar?","¿Cuantos cigarrillos fuma al dia?","¿Fuma mas en las primeras horas tras levantarse?","¿Fuma aunque este enfermo/a en cama la mayor parte del dia?"],
+   itemOpts:[["Mas de 60 min","31-60 min","6-30 min","5 min o menos"],["No","Si"],["El primero de la manana","Cualquier otro"],["10 o menos","11-20","21-30","31 o mas"],["No","Si"],["No","Si"]],
+   score:a=>{const pts=[[0,1,2,3],[0,1],[1,0],[0,1,2,3],[0,1],[0,1]];const total=a.reduce((s,v,i)=>s+(pts[i][v||0]||0),0);const pct=Math.round(total/10*100);const level=total>=6?"high":total>=4?"mid":"low";const label=total>=6?"Dependencia alta":total>=4?"Dependencia moderada":"Dependencia baja";return{pct,level,raw:total,max:10,label};} },
+ "SCOFF":{ label:"SCOFF (cribado TCA)", instr:"Responda Si o No a cada pregunta.", opts:["No","Si"],
+   items:["¿Se provoca el vomito porque se siente incomodamente lleno/a?","¿Le preocupa haber perdido el control sobre la cantidad que come?","¿Ha perdido mas de 6 kg en los ultimos 3 meses?","¿Se considera gordo/a aunque otros digan que esta delgado/a?","¿Diria que la comida domina su vida?"],
+   score:a=>{const total=a.reduce((x,y)=>x+(y||0),0);const pct=Math.round(total/5*100);const level=total>=2?"high":total>=1?"mid":"low";return{pct,level,raw:total,max:5,label:total>=2?"Cribado positivo (>=2)":"Bajo umbral"};} },
+ "SPIN":{ label:"SPIN (fobia social)", instr:"Ultima semana, cuanto le han molestado los siguientes problemas.", opts:["Nada","Un poco","Algo","Mucho","Extremo"],
+   items:["Tengo miedo a las personas con autoridad.","Me molesta ruborizarme delante de la gente.","Las fiestas y acontecimientos sociales me dan miedo.","Evito hablar con desconocidos.","Me da mucho miedo ser criticado/a.","Por temor al ridiculo evito hacer cosas o hablar con la gente.","Sudar en publico me produce malestar.","Evito ir a fiestas.","Evito actividades en las que soy el centro de atencion.","Hablar con extranos me atemoriza.","Evito dar discursos.","Haria cualquier cosa para evitar ser criticado/a.","Me dan miedo las palpitaciones cuando estoy con gente.","Temo hacer las cosas cuando la gente puede estar mirandome.","Entre mis mayores miedos esta hacer el ridiculo o parecer estupido/a.","Evito hablar con cualquiera que tenga autoridad.","Temblar o tener sacudidas delante de otros me produce malestar."],
+   score:a=>{const total=a.reduce((x,y)=>x+(y||0),0);const pct=Math.round(total/68*100);const level=total>=19?"high":total>=10?"mid":"low";const label=total>=19?"Probable fobia social (>=19)":"Bajo umbral";return{pct,level,raw:total,max:68,label};} },
+ "G-SAS":{ label:"G-SAS (juego)", instr:"Ultima semana.",
+   items:["Su impulso por jugar, ¿que tan fuerte fue en promedio?","¿Cuantas veces tuvo impulso por jugar?","¿Cuantas horas estuvo preocupado/a por su impulso por jugar?","¿En que medida pudo controlar su impulso por jugar?","¿Cuantas veces penso en jugar o apostar?","¿En que medida pudo controlar sus pensamientos sobre el juego?","¿Cuanto tiempo paso jugando o en actividades de juego?","¿Cuanto nerviosismo o euforia sintio justo antes de jugar?","¿Cuanta euforia o placer sintio al ganar?","¿Cuanto dolor emocional (sufrimiento, culpa, verguenza) le causo el juego?","¿Que nivel de interferencia personal (relaciones, dinero, trabajo, salud) le ocasiono el juego?"],
+   itemOpts:[["Ninguno","Leve","Moderado","Fuerte","Extremo"],["Ninguna","Una vez","Dos o tres veces","Varias veces","Constantemente o casi"],["Ninguna","1 hora o menos","De 1 a 7 h","7 a 21 h","Mas de 21 h"],["Completamente","Mucho","Moderadamente","Minimamente","Sin control"],["Ninguna","Una vez","De dos a cuatro veces","Varias veces","Constantemente o casi"],["Completamente","Mucho","Moderadamente","Minimamente","Sin control"],["Nada","2 horas o menos","De 2 a 7 h","7 a 21 h","Mas de 21 h"],["Ninguna","Minima","Moderada","Mucha","Extrema"],["Ninguna","Minima","Moderada","Mucha","Extrema"],["Ninguno","Leve","Moderado","Fuerte","Extremo"],["Ninguno","Leve","Moderado","Fuerte","Extremo"]],
+   score:a=>{const total=a.reduce((x,y)=>x+(y||0),0);const pct=Math.round(total/44*100);const level=total>=20?"high":total>=8?"mid":"low";const label=total>=20?"Grave":total>=8?"Moderado":"Leve";return{pct,level,raw:total,max:44,label};} },
+ "MGH-SFQ":{ label:"MGH-SFQ (funcion sexual)", instr:"Ultimo mes (compare con su mejor funcionamiento previo).", opts:["Mas de lo normal","Normal","Minimamente disminuido","Moderadamente disminuido","Marcadamente disminuido","Totalmente ausente"],
+   items:["¿Como ha estado su interes sexual?","¿Como ha estado su capacidad de excitacion sexual?","¿Como ha estado su capacidad para conseguir el orgasmo?","(Hombres) ¿Como ha estado su capacidad para conseguir y mantener una ereccion?","¿Como calificaria su satisfaccion sexual global?"],
+   score:a=>{const total=a.reduce((x,y)=>x+(y||0),0);const pct=Math.round(total/25*100);const level=total>=12?"high":total>=6?"mid":"low";const label=total>=12?"Disfuncion marcada":total>=6?"Disfuncion moderada":"Normal/leve";return{pct,level,raw:total,max:25,label};} },
+};
+function scoreSubset(vals,maxEach,label){
+  const raw=vals.reduce((t,v)=>t+(v||0),0), max=vals.length*maxEach, pct=max?Math.round(raw/max*100):0;
+  return {pct,level:pctLevel(pct),raw,max,label};
+}
+function scaleItemScore(src,i,v){
+  const x=v||0;
+  if(src==="AUDIT"&&i>=8)return x*2;
+  if(src==="DUDIT"&&i>=9)return x*2;
+  if(src==="FTND"){
+    const pts=[[0,1,2,3],[0,1],[1,0],[0,1,2,3],[0,1],[0,1]];
+    return pts[i][x]||0;
+  }
+  return x;
+}
+function scaleItemMax(src,i){
+  const sc=SCALES[src]; if(!sc)return 0;
+  if(src==="FTND")return [3,1,1,3,1,1][i]||0;
+  if((src==="AUDIT"&&i>=8)||(src==="DUDIT"&&i>=9))return 4;
+  if(sc.itemOpts)return (sc.itemOpts[i]||[]).length-1;
+  if(sc.groups)return (sc.groups[i]||[]).length-1;
+  if(sc.opts)return sc.opts.length-1;
+  return 0;
+}
+function computeScaleDimensions(src,answers){
+  const dims=DX_DIMENSIONS[src]||[];
+  return dims.map(dim=>{
+    const total=dim.items.reduce((sum,i)=>sum+scaleItemScore(src,i,answers[i]),0);
+    const max=dim.items.reduce((sum,i)=>sum+scaleItemMax(src,i),0);
+    const pct=max?Math.round(total/max*100):0;
+    const level=pct>=66?"high":pct>=33?"mid":"low";
+    return {name:dim.name,total,max,pct,level};
+  });
+}
+function attachScaleDimensions(src,result,answers){
+  const dimensions=computeScaleDimensions(src,answers);
+  return dimensions.length?{...result,itemScores:answers,dimensions}:{...result,itemScores:answers};
+}
+function subsetBank(src,subName,idxs,maxEach,label){
+  const sc=SCALES[src];
+  return {src,subName,label:`${src} · ${subName}`,instr:`Items anexados a ${subName}.`,opts:sc.opts,items:idxs.map(i=>sc.items[i]),score:a=>scoreSubset(a,maxEach,label||subName)};
+}
+function getSymBank(s){
+  if(!s) return null;
+  if(s.idas){
+    const sc=IDAS_SCALES.find(x=>x.id===s.idas);
+    return {src:"IDAS-II",subName:s.name,label:`IDAS-II · ${s.name}`,instr:"Subescala anexada a este chip.",opts:["En absoluto","Un poco","Moderadamente","Bastante","Extremadamente"],items:sc.items.map(n=>IDAS99[n-1]),score:a=>computeIDASSub(s.idas,a)};
+  }
+  if(s.name==="CAPE Positiva") return {src:"CAPE",subName:s.name,label:"CAPE · Positiva",instr:"CAPE-42 · dimension positiva. Frecuencia; dimension depresiva excluida.",opts:CAPE_OPTS,items:CAPE_POSITIVE_ITEMS,score:a=>scoreCape(a,"Positiva")};
+  if(s.name==="CAPE Negativa") return {src:"CAPE",subName:s.name,label:"CAPE · Negativa",instr:"CAPE-42 · dimension negativa. Frecuencia; dimension depresiva excluida.",opts:CAPE_OPTS,items:CAPE_NEGATIVE_ITEMS,score:a=>scoreCape(a,"Negativa")};
+  if(s.name==="Despersonalizacion") return {src:"DES-M",subName:s.name,label:"DES-M · Despersonalizacion",instr:"DES-M · subescala despersonalizacion/desrealizacion. Frecuencia.",opts:DESM_OPTS,items:DESM_DEPERS_ITEMS,score:a=>scoreDesm(a,"Despersonalizacion")};
+  const banks={
+    "PCL-R Interpersonal":subsetBank("PCL-R","PCL-R Interpersonal",[0,1,3,4],2,"Interpersonal"),
+    "PCL-R Afectiva":subsetBank("PCL-R","PCL-R Afectiva",[5,6,7,15],2,"Afectiva"),
+    "PCL-R Estilo de vida":subsetBank("PCL-R","PCL-R Estilo de vida",[2,8,12,13,14],2,"Estilo de vida"),
+    "PCL-R Antisocial":subsetBank("PCL-R","PCL-R Antisocial",[9,11,17,18,19],2,"Antisocial"),
+    "Narcisismo Vulnerable":subsetBank("PNI-28","Narcisismo Vulnerable",[1,2,3,6,8,9,10,13,14,16,17,20,22,23,24,27],5,"Vulnerable"),
+    "Narcisismo Grandioso":subsetBank("PNI-28","Narcisismo Grandioso",[0,4,5,7,11,12,15,18,19,21,25,26],5,"Grandioso"),
+    "Restriccion":subsetBank("S-EDE-Q","Restriccion",[0,1,2,3,4],6,"Restriccion"),
+    "Preoc. alimentaria":subsetBank("S-EDE-Q","Preoc. alimentaria",[5,6,7,13,19],6,"Preocupacion alimentaria"),
+    "Preoc. figura":subsetBank("S-EDE-Q","Preoc. figura",[8,9,10,11,15,18,20,21],6,"Preocupacion por figura"),
+    "Preoc. peso":subsetBank("S-EDE-Q","Preoc. peso",[9,12,14,16,17],6,"Preocupacion por peso")
+  };
+  if(banks[s.name]) return banks[s.name];
+  if(SCALES[s.src]){const sc=SCALES[s.src];return {src:s.src,subName:null,label:sc.label,instr:sc.instr||"",opts:sc.opts,items:sc.items,itemOpts:sc.itemOpts,score:sc.score};}
+  return null;
+}
+function computeIDASSub(id,ans){
+  const sc=IDAS_SCALES.find(s=>s.id===id), vals=Array(99).fill(undefined);
+  sc.items.forEach((n,i)=>vals[n-1]=ans[i]+1);
+  return computeIDAS(vals)[id];
+}
+function symActionHTML(s,wide=false){
+  const bank=getSymBank(s); if(!bank)return"";
+  const cls=wide?"do-btn wide":"do-btn sm", wrap=wide?"margin-top:14px":"margin-top:6px";
+  return `<div style="${wrap}"><button class="${cls}" data-do="symbank:${encodeURIComponent(s.name)}">Hacer ${bank.label} (${bank.items.length} items)</button></div>`;
+}
+function realScore(src,subName){
+  const d=(patient().scales||{})[src]; if(!d) return null;
+  if(d.sub){ if(subName && d.sub[subName]!=null){
+    const detail=d.details&&d.details[subName];
+    if(detail)return{pct:detail.pct,has:true,level:detail.level||pctLevel(detail.pct),raw:detail.raw,max:detail.max,label:detail.label,real:true};
+    const p=d.sub[subName];return{pct:p,has:true,level:pctLevel(p),real:true};
+  } return null; }
+  return {pct:d.pct,has:true,level:d.level||pctLevel(d.pct),raw:d.raw,max:d.max,label:d.label,real:true};
+}
+function dxScore(d){ return realScore(d.src) || simFromSpectrum(d.name,d.spectrum); }
+const SPECTRA_KEYS=new Set(["somatoform","internalizing","thought","detachment","neuro","disinhibited","antagonistic"]);
+const LEAVES=[]; TREE.forEach(g=>g.leaves.forEach(lf=>LEAVES.push({k:lf.k,sp:g.sp,label:lf.label,direct:lf.k===g.sp})));
+function facetSub(f){ return f.spectrum==="internalizing"?"distress":f.spectrum; }
+function leafScore(k,sp){
+  if(SPECTRA_KEYS.has(k)) return score(k);            // hoja = espectro directo
+  if(k==="adhd"||k==="asd"){
+    const n=patient().neuro||{}, ids=(VISIBLE_NEURO_INSTR[k]||[]).map(([id])=>id);
+    const pcts=ids.map(id=>n[id]&&n[id].pct).filter(v=>typeof v==="number");
+    if(!pcts.length) return {pct:0,has:false,level:null};
+    const pct=Math.max(...pcts); return {pct,has:true,level:pctLevel(pct)};
+  }
+  if(k==="distress"){const d=patient().k10; if(d) return {pct:d.pct,has:true,level:d.level}; return simFromSpectrum(k,sp);} // Kessler-10 = agregado de Distress
+  if(k==="eating"){const d=(patient().scales||{})["SCOFF"]; if(d) return {pct:d.pct,has:true,level:d.level}; return simFromSpectrum(k,sp);}
+  if(k==="sexual"){const d=(patient().scales||{})["MGH-SFQ"]; if(d) return {pct:d.pct,has:true,level:d.level}; return simFromSpectrum(k,sp);}
+  return simFromSpectrum(k,sp);                        // subfactor derivado (placeholder)
+}
+function hasIDASSub(sub){
+  const idas=patient().idas||{};
+  return IDAS_SCALES.some(s=>s.sub===sub && idas[s.id] && idas[s.id].has);
+}
+function nodeCapability(key){
+  if(BHITOP_SCALES.some(s=>s.key===key) || key==="pfactor") return true;
+  if(TRANSDIAGNOSTIC_SCALES.some(([id])=>id===key)) return true;
+  if(["neuro","adhd","asd","distress","fear","mania","eating","sexual","eq5d"].includes(key)) return true;
+  return PID5_FACETS.some(f=>f.spectrum===key);
+}
+function nodeCompleted(key){
+  const p=patient(), n=p.neuro||{}, scales=p.scales||{};
+  if(p.bhitop&&p.bhitop[key]) return true;
+  if(TRANSDIAGNOSTIC_SCALES.some(([id])=>id===key)) return !!((p.context||{})[key]);
+  if(key==="neuro") return !!(n.asrs18||n.aq10);
+  if(key==="adhd") return !!n.asrs18;
+  if(key==="asd") return !!n.aq10;
+  if(key==="distress") return !!p.k10 || hasIDASSub("distress");
+  if(key==="fear") return hasIDASSub("fear");
+  if(key==="mania") return hasIDASSub("mania");
+  if(key==="eating") return !!scales["SCOFF"];
+  if(key==="sexual") return !!scales["MGH-SFQ"];
+  if(PID5_FACETS.some(f=>f.spectrum===key)) return PID5_FACETS.some(f=>f.spectrum===key && p.pid5&&p.pid5[f.name]);
+  return false;
+}
+function nodeHTML(dataKey,cls,label,sc,style){
+  const sel=selected===dataKey?"sel":"";
+  const cap=nodeCapability(dataKey), done=nodeCompleted(dataKey);
+  return `<button class="node ${cls} ${sel}" data-node="${dataKey}" ${style?`style="${style}"`:""}>
+    <span class="node-title">${cap?`<span class="node-dot ${done?"done":""}" title="${done?"Dato registrado":"Escala/seccion disponible"}"></span>`:""}<span class="node-label">${label}</span></span>
+    <span class="sevbar-wrap"><span class="sevbar"><i class="${levelClass(sc.level,sc.has)}" style="width:${sc.has?sc.pct:0}%"></i></span>
+    <span class="sevnum">${sc.has?sc.pct+"/100":"s/d"}</span></span></button>`;
+}
+function formItemCount(sc){
+  if(!sc)return 0;
+  if(sc.groups)return sc.groups.length;
+  if(sc.items)return sc.items.length;
+  return 0;
+}
+function pushBatterySpec(specs,seen,id,label,total,done){
+  if(!total||seen.has(id))return;
+  seen.add(id);
+  specs.push({id,label,total,done:Math.max(0,Math.min(done||0,total))});
+}
+function completedSymBankItems(p,s,bank){
+  if(!bank)return 0;
+  if(s.idas){
+    const sc=IDAS_SCALES.find(x=>x.id===s.idas);
+    return p.idas&&sc&&p.idas[sc.id]&&p.idas[sc.id].has ? bank.items.length : 0;
+  }
+  const d=(p.scales||{})[bank.src];
+  if(!d)return 0;
+  if(bank.subName)return d.sub&&d.sub[bank.subName]!=null ? bank.items.length : 0;
+  return bank.items.length;
+}
+function batteryItemProgress(){
+  const p=patient(), specs=[], seen=new Set(), neuro=p.neuro||{}, context=p.context||{}, scales=p.scales||{};
+  const add=(id,label,total,done)=>pushBatterySpec(specs,seen,id,label,total,done);
+
+  const allBHitopCodes=new Set(BHITOP_ITEMS.map(it=>it.code)), doneBHitopCodes=new Set();
+  if(p.bhitop){
+    const primary=["internalizing","somatoform","thought","detachment","disinhibited","antagonistic"];
+    primary.forEach(k=>{if(p.bhitop[k]){const sc=BHITOP_SCALES.find(x=>x.key===k);sc.codes.forEach(c=>doneBHitopCodes.add(c));}});
+    if(primary.every(k=>p.bhitop[k])) allBHitopCodes.forEach(c=>doneBHitopCodes.add(c));
+    if(!doneBHitopCodes.size&&p.bhitop.pfactor){
+      const sc=BHITOP_SCALES.find(x=>x.key==="pfactor");
+      sc.codes.forEach(c=>doneBHitopCodes.add(c));
+    }
+  }
+  add("bhitop","B-HiTOP",allBHitopCodes.size,doneBHitopCodes.size);
+
+  const donePid5=new Set();
+  if(p.pid5)PID5_FACETS.forEach(f=>{if(p.pid5[f.name])f.items.forEach(id=>donePid5.add(id));});
+  add("pid5","PID-5",PID5_ITEMS.length,donePid5.size);
+  add("neuro:asrs18","ASRS-18",ASRS18_ITEMS.length,neuro.asrs18?ASRS18_ITEMS.length:0);
+  add("neuro:aq10","AQ-10",AQ10.length,neuro.aq10?AQ10.length:0);
+
+  TRANSDIAGNOSTIC_SCALES.forEach(([id,label])=>{
+    const total=transdiagnosticItems(id).length;
+    add("ctx:"+id,label,total,context[id]?total:0);
+  });
+
+  add("k10","Kessler-10",K10.length,p.k10?K10.length:0);
+
+  const dxSeen=new Set();
+  DX_SCALES.forEach(d=>{
+    if(!SCALES[d.src]||dxSeen.has(d.src))return;
+    dxSeen.add(d.src);
+    const total=formItemCount(SCALES[d.src]);
+    add("dx:"+d.src,d.src,total,scales[d.src]?total:0);
+  });
+
+  const symSeen=new Set();
+  LEAVES.forEach(lf=>figureSymptomsForSub(lf.k).forEach(s=>{
+    if(symSeen.has(s.name))return;
+    symSeen.add(s.name);
+    const bank=getSymBank(s); if(!bank)return;
+    add("sym:"+s.name,bank.label,bank.items.length,completedSymBankItems(p,s,bank));
+  }));
+  ["SCOFF","MGH-SFQ"].forEach(src=>{
+    const sc=SCALES[src], total=formItemCount(sc);
+    add("scale:"+src,src,total,scales[src]?total:0);
+  });
+
+  const total=specs.reduce((sum,x)=>sum+x.total,0), done=specs.reduce((sum,x)=>sum+x.done,0);
+  return {total,done,pct:total?Math.round(done/total*100):0,formsTotal:specs.length,formsDone:specs.filter(x=>x.done>=x.total).length};
+}
+function renderBatteryProgress(){
+  const el=document.getElementById("batteryProgress"); if(!el)return;
+  const b=batteryItemProgress(), pending=Math.max(0,b.total-b.done);
+  el.innerHTML=`<div class="item-progress-top"><span class="item-progress-label">Progreso de bateria</span><span class="item-progress-count">${b.done}/${b.total} items</span></div>
+    <div class="item-progress-track" title="${b.pct}% completado"><i style="width:${b.pct}%"></i></div>
+    <div class="item-progress-meta"><span>${b.formsDone}/${b.formsTotal} escalas</span><span>${pending} pendientes</span></div>`;
+}
+
+const LABELS={
+ neuro:"Neurodevelopmental",
+ ders16:"DERS-16 · Regulacion emocional",
+ aaq2:"AAQ-II · Flexibilidad psicologica",
+ uppsp:"S-UPPS-P · Impulsividad",
+ ptq:"PTQ-15 · Pensamiento repetitivo",
+ djg6:"DJG-6 · Soledad",
+ swls:"SWLS · Bienestar",
+ wsas:"WHODAS-12 · Funcionamiento",
+ aces:"ACEs · Adversidad temprana",
+ eq5d:"EQ-5D-5L · Calidad de vida",
+ efeco21:"EFECO-21 · Funciones ejecutivas"
+};
+BHITOP_SCALES.forEach(s=>LABELS[s.key]=s.label);
+const SPECTRA=["internalizing","somatoform","thought","detachment","neuro","disinhibited","antagonistic"];
+const EXT_KEYS=["disinhibited","antagonistic"];
+const TRANSDIAGNOSTIC_SCALES=[
+ ["ders16","DERS-16"],
+ ["aaq2","AAQ-II"],
+ ["uppsp","S-UPPS-P"],
+ ["ptq","PTQ-15"],
+ ["djg6","DJG-6"],
+ ["swls","SWLS"],
+ ["wsas","WHODAS-12"],
+ ["aces","ACEs"],
+ ["eq5d","EQ-5D-5L"],
+ ["efeco21","EFECO-21"]
+];
+function isTransdiagnosticScale(key){return TRANSDIAGNOSTIC_SCALES.some(([id])=>id===key);}
+function transdiagnosticSpec(key){return TRANSDIAGNOSTIC_SCALES.find(([id])=>id===key)||[key,key.toUpperCase()];}
+
+/* ===================== Estadistica ===================== */
+function erf(x){const t=1/(1+0.3275911*Math.abs(x));const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return x>=0?y:-y;}
+const ncdf=z=>0.5*(1+erf(z/Math.SQRT2));
+function computeBHitop(byCode){
+  const out={};
+  BHITOP_SCALES.forEach(s=>{
+    const xs=s.codes.map(c=>byCode[c]).filter(v=>typeof v==="number");
+    if(!xs.length)return;
+    const mean=xs.reduce((a,b)=>a+b,0)/xs.length;
+    const z=(mean-s.mean)/s.sd, pct=Math.min(99,Math.max(1,Math.round(ncdf(z)*100)));
+    out[s.key]={mean:Math.round(mean*100)/100,pct};
+  });
+  return out;
+}
+function computeBHitopScale(key,vals){
+  const s=BHITOP_SCALES.find(x=>x.key===key);
+  const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+  const z=(mean-s.mean)/s.sd, pct=Math.min(99,Math.max(1,Math.round(ncdf(z)*100)));
+  return {mean:Math.round(mean*100)/100,pct};
+}
+function computeASRS6(v){const thr=[3,3,3,2,2,2];let c=0;v.forEach((x,i)=>{if(x>=thr[i])c++;});return{count:c,positive:c>=4,pct:Math.round(c/6*100)};}
+function computeASRS18(v){
+  const scores=v.map(x=>x||0), pct=Math.round(scores.reduce((a,b)=>a+b,0)/72*100);
+  return{pct,level:pctLevel(pct),itemScores:scores,dimensions:dimScores(scores,ASRS18_DIMS,0,4)};
+}
+function aq10ItemScores(v){
+  const agree=new Set([0,6,7,9]);
+  return v.map((x,i)=>agree.has(i)?(x>=2?1:0):(x<=1?1:0));
+}
+function computeAQ10(v){
+  const scores=aq10ItemScores(v), c=scores.reduce((a,b)=>a+b,0);
+  return{count:c,positive:c>=6,pct:Math.round(c/10*100),level:pctLevel(Math.round(c/10*100)),itemScores:scores,dimensions:dimScores(scores,AQ10_DIMS,0,1)};
+}
+const K10=[
+ "se sintio cansado/a sin un buen motivo?","se sintio nervioso/a?","se sintio tan nervioso/a que nada lo/la podia calmar?",
+ "se sintio sin esperanza?","se sintio inquieto/a o impaciente?","se sintio tan inquieto/a que no podia quedarse quieto/a?",
+ "se sintio deprimido/a?","sintio que todo era un esfuerzo?","se sintio tan triste que nada lo/la animaba?","sintio que no valia nada?"];
+function computeK10(v){const total=v.reduce((a,b)=>a+b,0); // items 1-5
+  const level=total>=30?"high":total>=20?"mid":"low";
+  const label=total>=30?"Severo":total>=25?"Moderado":total>=20?"Leve":"Bienestar";
+  return{total,max:50,pct:Math.round((total-10)/40*100),level,label};}
+
+/* Instrumentos de Neurodesarrollo conservados en base; no todos se muestran en la figura. */
+const RAADSR_REV=new Set([1,6,11,18,23,26,33,37,43,47,48,53,58,62,68,72,77]);
+const RAADS_OPTS=["Verdadero ahora y cuando era joven","Verdadero solo ahora","Solo cuando era menor de 16","Nunca verdadero"];
+const RAADS14_ITEMS=[
+ "Me resulta dificil comprender como se sienten los demas cuando hablamos.",
+ "Algunas texturas comunes que a otros no les molestan me resultan muy desagradables al tacto.",
+ "Me resulta muy dificil trabajar y funcionar en grupo.",
+ "Es dificil descifrar que esperan los demas de mi.",
+ "A menudo no se como comportarme en situaciones sociales.",
+ "Puedo charlar y entablar conversaciones triviales con la gente.",
+ "Cuando me siento abrumado por mis sentidos, tengo que aislarme para desconectarlos.",
+ "Como hacer amigos y socializar es un misterio para mi.",
+ "Cuando hablo con alguien, me cuesta saber cuando me toca hablar o escuchar.",
+ "A veces tengo que taparme los oidos para bloquear ruidos molestos.",
+ "Puede ser muy dificil leer la cara, las manos y los movimientos corporales al hablar.",
+ "Me centro en los detalles mas que en la idea general.",
+ "Me tomo las cosas demasiado literalmente, asi que a menudo no entiendo lo que dicen.",
+ "Me molesta muchisimo cuando la forma en que me gusta hacer las cosas cambia de repente."];
+const ASRS18_ITEMS=[
+ "Con que frecuencia tiene dificultad para terminar los detalles finales de un proyecto?",
+ "Con que frecuencia tiene dificultad para ordenar las cosas en una tarea que requiere organizacion?",
+ "Con que frecuencia tiene problemas para recordar citas u obligaciones?",
+ "Cuando una tarea requiere mucha reflexion, con que frecuencia evita o demora empezarla?",
+ "Con que frecuencia mueve las manos o los pies al permanecer sentado/a mucho tiempo?",
+ "Con que frecuencia se siente demasiado activo/a, como impulsado/a por un motor?",
+ "Con que frecuencia comete errores por descuido en una tarea aburrida o dificil?",
+ "Con que frecuencia tiene dificultad para mantener la atencion en un trabajo repetitivo?",
+ "Con que frecuencia le cuesta concentrarse en lo que le dicen, aunque le hablen directamente?",
+ "Con que frecuencia extravia o le cuesta encontrar cosas en casa o el trabajo?",
+ "Con que frecuencia se distrae por la actividad o el ruido a su alrededor?",
+ "Con que frecuencia se levanta del asiento cuando se espera que permanezca sentado/a?",
+ "Con que frecuencia se siente inquieto/a o intranquilo/a?",
+ "Con que frecuencia le cuesta relajarse y desconectar en su tiempo libre?",
+ "Con que frecuencia se descubre hablando demasiado en situaciones sociales?",
+ "Con que frecuencia termina las frases de otras personas antes que ellas?",
+ "Con que frecuencia le cuesta esperar su turno?",
+ "Con que frecuencia interrumpe a otras personas cuando estan ocupadas?"];
+const WURS_ITEMS=[
+ "De nino/a: activo/a, inquieto/a, siempre en movimiento.",
+ "De nino/a: con miedo a las cosas.",
+ "De nino/a: problemas de concentracion, facilmente distraible.",
+ "De nino/a: ansioso/a, preocupado/a.",
+ "De nino/a: nervioso/a, no podia quedarme quieto/a.",
+ "De nino/a: desatento/a, sonador/a.",
+ "De nino/a: con mal genio, me enojaba con facilidad.",
+ "De nino/a: timido/a, sensible.",
+ "De nino/a: con berrinches o estallidos de ira.",
+ "De nino/a: me costaba terminar lo que empezaba.",
+ "De nino/a: terco/a, obstinado/a.",
+ "De nino/a: triste, decaido/a o infeliz.",
+ "De nino/a: desobediente, rebelde o respondon/a.",
+ "De nino/a: con baja opinion de mi mismo/a.",
+ "De nino/a: irritable.",
+ "De nino/a: con altibajos de animo.",
+ "De nino/a: con enojo intenso.",
+ "De nino/a: me costaba ver las cosas desde el punto de vista de otros.",
+ "De nino/a: con problemas con la autoridad o en la escuela.",
+ "De nino/a: estudiante con dificultades o aprendizaje lento.",
+ "De nino/a: con dificultades en matematicas o numeros.",
+ "De nino/a: no rendia a la altura de mi potencial.",
+ "De nino/a: impulsivo/a, actuaba sin pensar.",
+ "De nino/a: con problemas para llevarme con otros ninos.",
+ "De nino/a: desorganizado/a, perdia mis cosas."];
+const RAADSR_ITEMS=[
+ "Soy una persona comprensiva.","A menudo uso palabras y frases de peliculas y TV en mis conversaciones.","A menudo me sorprende cuando otros me dicen que he sido grosero.","A veces hablo demasiado alto o bajo y no me doy cuenta.","A menudo no se como comportarme en situaciones sociales.","Puedo ponerme en el lugar de los demas.","Me cuesta entender frases como 'eres la nina de mis ojos'.","Solo me gusta hablar con personas que comparten mis intereses especiales.","Me centro en los detalles mas que en la idea general.","Siempre me fijo en como se siente la comida en mi boca, mas que en su sabor.",
+ "Echo de menos a mis amigos o familia cuando estamos separados mucho tiempo.","A veces ofendo a otros al decir lo que pienso sin querer.","Solo me gusta pensar y hablar de algunas cosas que me interesan.","Prefiero ir a comer a un restaurante solo que con alguien que conozco.","No puedo imaginar como seria ser otra persona.","Me han dicho que soy torpe o descoordinado.","Otros me consideran raro o diferente.","Entiendo cuando los amigos necesitan consuelo.","Soy muy sensible a la sensacion de mi ropa al tocarla.","Me gusta imitar como hablan y actuan ciertas personas para parecer mas normal.",
+ "Puede intimidarme hablar con mas de una persona a la vez.","Tengo que 'actuar con normalidad' para complacer a los demas.","Conocer gente nueva suele ser facil para mi.","Me confundo mucho cuando me interrumpen mientras hablo de algo que me interesa.","Me resulta dificil comprender como se sienten los demas cuando hablamos.","Me gusta conversar con varias personas a la vez (mesa, escuela, trabajo).","Me tomo las cosas demasiado literalmente.","Me cuesta entender cuando alguien esta avergonzado o celoso.","Algunas texturas que no molestan a otros me resultan muy ofensivas al tacto.","Me molesta muchisimo cuando cambia repentinamente la forma en que hago las cosas.",
+ "Nunca he querido ni necesitado una 'relacion intima'.","Me cuesta empezar y terminar una conversacion; sigo hablando hasta terminar.","Hablo con un ritmo normal.","El mismo sonido, color o textura puede cambiar de muy intenso a muy apagado.","La frase 'te tengo metido bajo la piel' me incomoda.","A veces un ruido agudo puede ser doloroso para mis oidos.","Soy una persona de trato comprensivo.","No conecto con los personajes de las peliculas ni siento lo que ellos sienten.","No puedo saber cuando alguien esta coqueteando conmigo.","Puedo ver en mi mente con detalle las cosas que me interesan.",
+ "Mantengo listas de cosas que me interesan aunque no tengan utilidad practica.","Cuando me abruman mis sentidos, tengo que aislarme.","Me gusta hablar de las cosas con mis amigos.","No puedo saber si alguien esta interesado o aburrido con lo que digo.","Puede ser muy dificil leer la cara, manos y movimientos de alguien al hablar.","La misma cosa puede sentirse muy diferente para mi en distintos momentos.","Me siento muy comodo teniendo citas o en situaciones sociales.","Intento ser lo mas util posible cuando otros me cuentan sus problemas.","Me han dicho que tengo una voz inusual (plana, monotona, infantil o aguda).","A veces un pensamiento se me queda grabado y tengo que hablar de el aunque a nadie le interese.",
+ "Hago cosas con mis manos una y otra vez (aletear, girar objetos).","Nunca me ha interesado lo que la mayoria considera interesante.","Se me considera una persona compasiva.","Me llevo bien siguiendo reglas especificas que me ayudan a parecer normal.","Me resulta muy dificil trabajar y funcionar en grupos.","Me cuesta cambiar de tema; si el otro lo hace, me enfado o confundo.","A veces tengo que taparme los oidos para bloquear ruidos molestos.","Puedo charlar y entablar conversaciones triviales.","A veces cosas que deberian doler no duelen.","Cuando hablo, me cuesta saber cuando me toca hablar o escuchar.",
+ "Quienes mejor me conocen me consideran solitario.","Normalmente hablo en un tono normal.","Me gusta que las cosas sean iguales dia tras dia; los cambios me molestan.","Como hacer amigos y socializar es un misterio para mi.","Me tranquiliza dar vueltas o mecerme cuando estoy estresado.","La frase 'muestra sus sentimientos abiertamente' no tiene sentido para mi.","En lugares con muchos olores, texturas, ruidos o luces me siento ansioso.","Puedo darme cuenta cuando alguien dice una cosa pero quiere decir otra.","Me gusta estar solo tanto como puedo.","Mantengo mis pensamientos apilados como fichas y selecciono el que necesito.",
+	 "El mismo sonido a veces parece muy fuerte o muy suave, aunque se que no cambio.","Me gusta comer y charlar con mi familia y amigos.","No puedo tolerar cosas que me disgustan (olores, texturas, sonidos, colores).","No me gusta que me abracen ni me sujeten.","Cuando voy a algun sitio tengo que seguir una ruta conocida.","Es dificil descifrar que esperan los demas de mi.","Me gusta tener amigos cercanos.","La gente me dice que doy demasiados detalles.","A menudo me dicen que hago preguntas incomodas.","Tiendo a senalar los errores de los demas."];
+const VISIBLE_NEURO_INSTR={
+ adhd:[["asrs18","ASRS-18"]],
+ asd:[["aq10","AQ-10"]],
+};
+const NEURO_INSTR={
+ asrs18:{label:"ASRS-18 (TDAH)",sub:"adhd",instr:"Ultimos 6 meses · frecuencia.",opts:["Nunca","Rara vez","A veces","A menudo","Muy a menudo"],items:ASRS18_ITEMS,
+   score:computeASRS18},
+ wurs:{label:"WURS-25 (TDAH infancia)",sub:"adhd",instr:"Recuerde como era de nino/a (antes de los 12).",opts:["Nada","Un poco","Moderado","Bastante","Mucho"],items:WURS_ITEMS,
+   score:ix=>{const s=ix.reduce((a,b)=>a+b,0);const pct=Math.round(s/100*100);return{pct,level:pctLevel(pct)};}},
+ raads14:{label:"RAADS-14 (TEA)",sub:"asd",instr:"Ahora y antes de los 16.",opts:RAADS_OPTS,items:RAADS14_ITEMS,
+   score:ix=>{let t=0;ix.forEach((v,i)=>{t+=(i+1===6)?v:(3-v);});const pct=Math.round(t/42*100);return{pct,level:pctLevel(pct)};}},
+ raadsr:{label:"RAADS-R (TEA, 80)",sub:"asd",instr:"Ahora y antes de los 16.",opts:RAADS_OPTS,items:RAADSR_ITEMS,
+   score:ix=>{let t=0;ix.forEach((v,i)=>{t+=RAADSR_REV.has(i+1)?v:(3-v);});const pct=Math.round(t/240*100);return{pct,level:pctLevel(pct)};}},
+};
+function dimScores(scores,dims,minEach,maxEach){
+  return dims.map(dim=>{
+    const total=dim.items.reduce((sum,i)=>sum+(scores[i]||0),0), min=minEach*dim.items.length, max=maxEach*dim.items.length;
+    const pct=Math.round((total-min)/(max-min)*100);
+    const level=pct>=66?"high":pct>=33?"mid":"low";
+    return{name:dim.name,total,max,pct,level};
+  });
+}
+function computeSWLS(v){const total=v.reduce((a,b)=>a+b,0); // items 1-7
+  const level=total>=25?"low":total>=15?"mid":"high"; // concern: baja satisfaccion = rojo
+  const label=total>=31?"Muy satisfecho":total>=26?"Satisfecho":total>=21?"Promedio":total>=15?"Levemente insatisfecho":total>=10?"Insatisfecho":"Muy insatisfecho";
+  return{total,max:35,pct:Math.round(total/35*100),level,label,itemScores:v};}
+function computeWSAS(v){const total=v.reduce((a,b)=>a+b,0); // WHODAS-12, items 1-5 -> 12-60
+  const pct=Math.round((total-12)/48*100);
+  const level=pct>=66?"high":pct>=33?"mid":"low";
+  const label=pct>=66?"Discapacidad severa":pct>=33?"Discapacidad moderada":"Discapacidad leve/nula";
+  return{total,max:60,pct,level,label,itemScores:v,dimensions:dimScores(v,WHODAS12_DIMS,1,5)};}
+function computeACES(v){
+  const total=v.reduce((a,b)=>a+(b||0),0), pct=Math.round(total/10*100);
+  const level=total>=4?"high":total>=1?"mid":"low";
+  const label=total>=4?"Carga ACE alta":total>=1?"Exposicion ACE presente":"Sin ACE reportados";
+  return{total,max:10,pct,level,label,itemScores:v,dimensions:dimScores(v,ACE_DIMS,0,1)};
+}
+function computeEQ5D(v){
+  const levels=v.map(x=>(x||0)+1);
+  const total=levels.reduce((a,b)=>a+b,0), pct=Math.round((total-5)/20*100);
+  const level=pct>=66?"high":pct>=33?"mid":"low";
+  const label="Perfil "+levels.join("");
+  return{total,max:25,pct,level,label,profile:levels.join(""),itemScores:levels};
+}
+function computeDERS16(v){
+  const scores=v.map(x=>(x||0)+1), total=scores.reduce((a,b)=>a+b,0), pct=Math.round((total-16)/64*100);
+  const level=pct>=66?"high":pct>=33?"mid":"low";
+  const label=pct>=66?"Alta desregulacion":pct>=33?"Desregulacion moderada":"Baja desregulacion";
+  return{total,max:80,pct,level,label,itemScores:scores,dimensions:dimScores(scores,DERS16_DIMS,1,5)};
+}
+function computeAAQII(v){
+  const scores=v.map(x=>(x||0)+1), total=scores.reduce((a,b)=>a+b,0), pct=Math.round((total-7)/42*100);
+  const level=pct>=66?"high":pct>=33?"mid":"low";
+  const label=pct>=66?"Alta inflexibilidad":pct>=33?"Inflexibilidad moderada":"Baja inflexibilidad";
+  return{total,max:49,pct,level,label,itemScores:scores,dimensions:dimScores(scores,AAQII_DIMS,1,7)};
+}
+function computeUPPSP(v){
+  const scores=v.map((x,i)=>UPPSP_REVERSE_ITEMS.has(i)?3-(x||0):(x||0));
+  const total=scores.reduce((a,b)=>a+b,0), pct=Math.round(total/60*100);
+  const level=pct>=66?"high":pct>=33?"mid":"low";
+  const label=pct>=66?"Alta impulsividad":pct>=33?"Impulsividad moderada":"Baja impulsividad";
+  return{total,max:60,pct,level,label,itemScores:scores,dimensions:dimScores(scores,UPPSP_DIMS,0,3)};
+}
+function computePTQ(v){
+  const total=v.reduce((a,b)=>a+(b||0),0), pct=Math.round(total/60*100);
+  const level=pct>=66?"high":pct>=33?"mid":"low";
+  const label=pct>=66?"Alto pensamiento repetitivo":pct>=33?"Pensamiento repetitivo moderado":"Bajo pensamiento repetitivo";
+  return{total,max:60,pct,level,label,itemScores:v,dimensions:dimScores(v,PTQ_DIMS,0,4)};
+}
+function computeDJG6(v){
+  const scored=v.map((x,i)=>DJG6_POSITIVE_ITEMS.has(i)?((x||0)<=1?1:0):((x||0)>=1?1:0));
+  const total=scored.reduce((a,b)=>a+b,0), pct=Math.round(total/6*100);
+  const level=total>=5?"high":total>=2?"mid":"low";
+  const label=total>=5?"Soledad alta":total>=2?"Soledad moderada":"Soledad baja/nula";
+  return{total,max:6,pct,level,label,itemScores:scored,dimensions:dimScores(scored,DJG6_DIMS,0,1)};
+}
+function computeEFECO21(v){
+  const scores=v.map(x=>x||0), total=scores.reduce((a,b)=>a+b,0), pct=Math.round(total/63*100);
+  const level=pct>=66?"high":pct>=33?"mid":"low";
+  const label=pct>=66?"Dificultad ejecutiva alta":pct>=33?"Dificultad ejecutiva moderada":"Dificultad ejecutiva baja";
+  return{total,max:63,pct,level,label,itemScores:scores,dimensions:dimScores(scores,EFECO21_DIMS,0,3)};
+}
+
+/* ===================== Pacientes ===================== */
+const PATIENTS=[
+ {code:"PT-014 (JM · 1990)",
+  bhitop:{pfactor:{mean:2.4,pct:88},internalizing:{mean:3.4,pct:95},somatoform:{mean:2.1,pct:60},detachment:{mean:2.9,pct:70},thought:{mean:1.1,pct:28},disinhibited:{mean:1.65,pct:50},antagonistic:{mean:1.35,pct:38},external:{mean:1.5,pct:46}},
+  neuro:{asrs6:{count:5,positive:true,pct:83},aq10:{count:7,positive:true,pct:70}},
+  context:{swls:{total:18,max:35,pct:51,level:"mid",label:"Levemente insatisfecho"},wsas:{total:38,max:60,pct:54,level:"mid",label:"Discapacidad moderada"}}},
+ {code:"PT-021 (RC · 1985)",
+  bhitop:{pfactor:{mean:2.1,pct:74},internalizing:{mean:1.85,pct:48},somatoform:{mean:1.7,pct:42},detachment:{mean:2.0,pct:40},thought:{mean:1.05,pct:20},disinhibited:{mean:2.5,pct:90},antagonistic:{mean:1.9,pct:82},external:{mean:2.2,pct:91}},
+  neuro:{}},
+ {code:"PT-NEW (sin evaluar)", bhitop:{}, neuro:{}},
+];
+let pIndex=0, selected=null, administering=null;
+const patient=()=>PATIENTS[pIndex];
+function pctLevel(pct){return pct>=67?"high":pct>=34?"mid":"low";}
+function levelClass(level,has){return !has?"sev-none":level==="high"?"sev-high":level==="mid"?"sev-mid":"sev-low";}
+function sevClass(pct,has){return levelClass(pctLevel(pct),has);}
+function score(key){
+  const p=patient();
+  if(key==="neuro"){const n=p.neuro||{}, a=["asrs18","aq10"].map(id=>n[id]&&n[id].pct).filter(v=>typeof v==="number");
+    if(!a.length)return{pct:0,has:false,level:null};const pct=Math.max(...a);return{pct,has:true,level:pctLevel(pct)};}
+  if(isTransdiagnosticScale(key)){const d=(p.context||{})[key];return d?{pct:d.pct,has:true,level:d.level,raw:d.total,max:d.max,label:d.label}:{pct:0,has:false,level:null};}
+  const d=p.bhitop&&p.bhitop[key];
+  return d?{mean:d.mean,pct:d.pct,has:true,level:pctLevel(d.pct)}:{mean:null,pct:0,has:false,level:null};
+}
+
+/* Simulacion de faceta PID-5: deriva del puntaje del espectro del paciente
+   con una variacion fija por faceta (placeholder hasta administrar el PID-5 real). */
+function facetScore(f){
+  const p=patient();
+  if(p.pid5&&p.pid5[f.name]){const d=p.pid5[f.name];return {mean:d.mean,pct:d.pct,has:true,level:d.level,raw:d.raw,max:d.max,label:d.label,real:true};}
+  const sp=score(f.spectrum);
+  if(!sp.has) return {pct:0,has:false,level:null,real:false};
+  let h=0; for(const c of f.name) h=(h*31+c.charCodeAt(0))%101;
+  const pct=Math.max(3,Math.min(99, Math.round(sp.pct + (h-50)/2.2)));
+  return {pct,has:true,level:pctLevel(pct),real:false};
+}
+
+/* ===================== Mapa ===================== */
+function chip(kind,name,sc,tip){
+  const k=kind+":"+name, attr=kind==="facet"?"data-facet":kind==="sym"?"data-sym":"data-dx";
+  const done=!!(sc&&sc.real), status=done?"Llenado":"Pendiente";
+  return `<div class="hchip ${selected===k?"sel":""}" ${attr}="${name}" title="${status} · ${tip||name}${sc.has?' · '+sc.pct+'/100':''}">
+    <span class="done-dot ${done?"done":""}" aria-label="${status}">${done?"&#10003;":""}</span>
+    <span class="hlabel">${name}</span>
+    <span class="hbar"><i class="${levelClass(sc.level,sc.has)}" style="width:${sc.has?sc.pct:0}%"></i></span></div>`;
+}
+function nodeBtn(key,cls,label,style){
+  const s=score(key),sel=selected===key?"sel":"";
+  const num = s.has ? (isTransdiagnosticScale(key) ? `${s.raw}/${s.max}` : `${s.pct}/100`) : "s/d";
+  return `<button class="node ${cls} ${sel}" data-node="${key}" ${style?`style="${style}"`:""}>
+    <span class="node-label">${label}</span>
+    <span class="sevbar-wrap">
+      <span class="sevbar"><i class="${levelClass(s.level,s.has)}" style="width:${s.has?s.pct:0}%"></i></span>
+      <span class="sevnum">${num}</span>
+    </span></button>`;
+}
+function renderMap(){
+  const N=LEAVES.length, cells=[];
+  // spans de espectros (columnas consecutivas con el mismo espectro)
+  let i=0; const spans=[];
+  while(i<N){ let j=i; while(j+1<N && LEAVES[j+1].sp===LEAVES[i].sp) j++; spans.push({sp:LEAVES[i].sp,start:i+1,count:j-i+1}); i=j+1; }
+  // columna-gutter (col 1) con etiquetas de nivel a la izquierda
+  const lab=(row,txt)=>`<div class="rowlab" style="grid-row:${row};grid-column:1">${txt}</div>`;
+  cells.push(lab(1,"Superespectro"),lab(2,"Espectros"),lab(3,"Subfactores"),lab(4,"Rasgos / Traits"),lab(5,"Sintomas"),lab(6,"Trastornos"),lab(7,"Transdiagnóstico"));
+  // fila 1: Factor P
+  cells.push(`<div style="grid-row:1;grid-column:2/-1">${nodeHTML("pfactor","band level-top","Factor P (general)",score("pfactor"))}</div>`);
+  // fila 2: Espectros (abarcan sus hojas)
+  spans.forEach(s=>{const g=TREE.find(t=>t.sp===s.sp);cells.push(`<div style="grid-row:2;grid-column:${s.start+1}/span ${s.count}">${nodeHTML(s.sp,"spectop level-top",g.label,score(s.sp))}</div>`);});
+  // fila 3: Subfactores (solo los que no son el espectro directo)
+  LEAVES.forEach((lf,idx)=>{ if(lf.direct)return; if(["adhd","asd","substance","antisocial"].includes(lf.k))return; // neuro al nivel Trastornos; substance/antisocial sin nodo de subfactor
+    cells.push(`<div style="grid-row:3;grid-column:${idx+2}">${nodeHTML(lf.k,"subnode level-top",lf.label,leafScore(lf.k,lf.sp))}</div>`); });
+  // fila 4: Rasgos PID-5 (por espectro/dominio, abarca todo el ancho del espectro)
+  spans.forEach(s=>{ const fac=PID5_FACETS.filter(f=>f.spectrum===s.sp); if(!fac.length)return;
+    cells.push(`<div style="grid-row:4;grid-column:${s.start+1}/span ${s.count}"><div class="rail-block"><div class="rail-cap">Rasgos · PID-5</div><div class="facet-rail">${fac.map(f=>chip("facet",f.name,facetScore(f))).join("")}</div></div></div>`); });
+  // fila 5: Sintomas IDAS-II / CAPE
+  LEAVES.forEach((lf,idx)=>{ const sym=figureSymptomsForSub(lf.k); if(!sym.length)return;
+    cells.push(`<div style="grid-row:5;grid-column:${idx+2}"><div class="rail-block rb-sym"><div class="rail-cap">Sintomas</div><div class="facet-rail">${sym.map(s=>chip("sym",s.name,symScore(s))).join("")}</div></div></div>`); });
+  // fila 6: Trastornos (escalas clicables donde existen, si no texto)
+  LEAVES.forEach((lf,idx)=>{
+    if(lf.k==="substance"){ cells.push(`<div style="grid-row:6;grid-column:${idx+2}">${nodeHTML("adhd","subnode","TDAH",leafScore("adhd","disinhibited"))}</div>`); return; }
+    if(lf.k==="detachment"){ cells.push(`<div style="grid-row:6;grid-column:${idx+2}">${nodeHTML("asd","subnode","TEA",leafScore("asd","detachment"))}</div>`); return; }
+    const dx=DX_SCALES.filter(d=>d.sub===lf.k);
+    if(dx.length){ cells.push(`<div style="grid-row:6;grid-column:${idx+2}"><div class="rail-block rb-dx"><div class="rail-cap">Trastornos · escalas</div><div class="facet-rail">${dx.map(d=>chip("dx",d.name,dxScore(d),d.name+" · "+d.src)).join("")}</div></div></div>`); return; }
+    const ds=DISORDERS[lf.k]; if(!ds)return;
+    cells.push(`<div style="grid-row:6;grid-column:${idx+2}"><div class="rail-block dis-block">${ds.map(d=>`<div class="dis">${d}</div>`).join("")}</div></div>`); });
+  cells.push(`<div style="grid-row:7;grid-column:2/-1"><div class="trans-rail">${TRANSDIAGNOSTIC_SCALES.map(([key,label])=>nodeHTML(key,"subnode level-top",label,score(key))).join("")}</div></div>`);
+  const tmpl="minmax(86px,auto) "+LEAVES.map(lf=>`minmax(0,${LEAF_W[lf.k]||1}fr)`).join(" ");
+  document.getElementById("map").innerHTML=`<div class="hgrid" style="grid-template-columns:${tmpl}">${cells.join("")}</div>`;
+  renderBatteryProgress();
+  document.querySelectorAll("[data-node]").forEach(b=>b.onclick=()=>{selected=selected===b.dataset.node?null:b.dataset.node;renderMap();renderPanel();});
+  bindFacets(document);
+}
+function selChip(k){selected=selected===k?null:k;renderMap();renderPanel();}
+function bindFacets(scope){
+  scope.querySelectorAll("[data-facet]").forEach(b=>b.onclick=e=>{e.stopPropagation();selChip("facet:"+b.dataset.facet);});
+  scope.querySelectorAll("[data-sym]").forEach(b=>b.onclick=e=>{e.stopPropagation();selChip("sym:"+b.dataset.sym);});
+  scope.querySelectorAll("[data-dx]").forEach(b=>b.onclick=e=>{e.stopPropagation();selChip("dx:"+b.dataset.dx);});
+}
+
+/* ===================== Panel ===================== */
+function bindDo(el){ el.querySelectorAll("[data-do]").forEach(b=>b.onclick=()=>adminScale(b.dataset.do)); }
+function scoreText(s){ if(!s.has)return"sin evaluar"; if(s.raw!=null)return `${s.raw}/${s.max} · ${s.label}`; return (s.mean!=null?s.mean+" · ":"")+"pct "+s.pct; }
+function contextButtonLabel(k){return transdiagnosticSpec(k)[1];}
+function transdiagnosticItems(k){
+  if(k==="swls") return SWLS;
+  if(k==="wsas") return WSAS;
+  if(k==="aces") return ACE_ITEMS;
+  if(k==="eq5d") return EQ5D_ITEMS;
+  if(k==="ders16") return DERS16_ITEMS;
+  if(k==="aaq2") return AAQII_ITEMS;
+  if(k==="uppsp") return UPPSP_ITEMS;
+  if(k==="ptq") return PTQ_ITEMS;
+  if(k==="djg6") return DJG6_ITEMS;
+  if(k==="efeco21") return EFECO21_ITEMS;
+  return [];
+}
+function transdiagnosticDimDefs(k){
+  if(k==="ders16") return DERS16_DIMS;
+  if(k==="aaq2") return AAQII_DIMS;
+  if(k==="uppsp") return UPPSP_DIMS;
+  if(k==="ptq") return PTQ_DIMS;
+  if(k==="aces") return ACE_DIMS;
+  if(k==="wsas") return WHODAS12_DIMS;
+  if(k==="djg6") return DJG6_DIMS;
+  if(k==="efeco21") return EFECO21_DIMS;
+  return [];
+}
+function metricRowHTML(name,value,pct,level){
+  const has=pct!=null;
+  return `<div class="scale"><div class="top"><span class="nm">${name}</span><span class="val">${value}</span></div>
+    <div class="bar"><i class="${levelClass(level,has)}" style="width:${has?pct:0}%"></i></div></div>`;
+}
+function transdiagnosticDetailHTML(k){
+  const data=(patient().context||{})[k], dims=transdiagnosticDimDefs(k);
+  if(dims.length){
+    const rows=data&&data.dimensions?data.dimensions:dims.map(d=>({name:d.name}));
+    const note=data&&!data.dimensions?`<p class="muted">Este registro solo tiene total; repetir escala para guardar dimensiones.</p>`:"";
+    return `<h2 style="margin-top:16px">Dimensiones</h2>${note}${rows.map(d=>metricRowHTML(d.name,d.total!=null?`${d.total}/${d.max}`:"s/d",d.pct,d.level)).join("")}`;
+  }
+  if(k==="swls"||k==="eq5d"){
+    const items=transdiagnosticItems(k), scores=data&&data.itemScores;
+    const title=k==="eq5d"?"Puntaje por dimension":"Puntaje individual";
+    const note=data&&!scores?`<p class="muted">Este registro solo tiene total; repetir escala para guardar puntajes individuales.</p>`:"";
+    return `<h2 style="margin-top:16px">${title}</h2>${note}${items.map((txt,i)=>{
+      const raw=scores&&scores[i]!=null?scores[i]:null;
+      const value=raw==null?"s/d":k==="eq5d"?`${raw}/5 · ${EQ5D_OPTS[raw-1]}`:`${raw}/7`;
+      const pct=raw==null?null:k==="eq5d"?Math.round((raw-1)/4*100):Math.round(raw/7*100);
+      const level=raw==null?null:pctLevel(pct);
+      return metricRowHTML(txt,value,pct,level);
+    }).join("")}`;
+  }
+  const items=transdiagnosticItems(k);
+  return `<h2 style="margin-top:16px">Items</h2><ol class="items">${items.map(t=>`<li>${t}</li>`).join("")}</ol>`;
+}
+function dxDetailHTML(src){
+  const defs=DX_DIMENSIONS[src]||[]; if(!defs.length)return "";
+  const data=(patient().scales||{})[src];
+  const rows=data&&data.dimensions?data.dimensions:defs.map(d=>({name:d.name}));
+  const note=data&&!data.dimensions?`<p class="muted">Este registro solo tiene total; repetir escala para guardar dimensiones.</p>`:"";
+  return `<h2 style="margin-top:16px">Dimensiones</h2>${note}${rows.map(d=>metricRowHTML(d.name,d.total!=null?`${d.total}/${d.max}`:"s/d",d.pct,d.level)).join("")}`;
+}
+function neuroDetailHTML(key){
+  const id=key==="adhd"?"asrs18":key==="asd"?"aq10":null; if(!id)return"";
+  const defs=id==="asrs18"?ASRS18_DIMS:AQ10_DIMS, data=(patient().neuro||{})[id];
+  const rows=data&&data.dimensions?data.dimensions:defs.map(d=>({name:d.name}));
+  const note=data&&!data.dimensions?`<p class="muted">Este registro solo tiene total; repetir escala para guardar dimensiones.</p>`:"";
+  return `<h2 style="margin-top:16px">Dimensiones</h2>${note}${rows.map(d=>metricRowHTML(d.name,d.total!=null?`${d.total}/${d.max}`:"s/d",d.pct,d.level)).join("")}`;
+}
+function symDetailHTML(s){
+  const defs=CAPE_DIMENSIONS[s.name]||(SCALES[s.src]?DX_DIMENSIONS[s.src]:null)||[]; if(!defs.length)return"";
+  let data=null;
+  if(CAPE_DIMENSIONS[s.name]) data=((patient().scales||{})["CAPE"]||{}).details&&((patient().scales||{})["CAPE"]||{}).details[s.name];
+  else data=(patient().scales||{})[s.src];
+  const rows=data&&data.dimensions?data.dimensions:defs.map(d=>({name:d.name}));
+  const note=data&&!data.dimensions?`<p class="muted">Este registro solo tiene total; repetir escala para guardar dimensiones.</p>`:"";
+  return `<h2 style="margin-top:16px">Dimensiones</h2>${note}${rows.map(d=>metricRowHTML(d.name,d.total!=null?`${d.total}/${d.max}`:"s/d",d.pct,d.level)).join("")}`;
+}
+function rowHTML(k){const s=score(k),sc=BHITOP_SCALES.find(x=>x.key===k);return `<div class="scale"><div class="top"><span class="nm">${LABELS[k]}</span><span class="val">${scoreText(s)}</span></div>
+  <div class="bar"><i class="${levelClass(s.level,s.has)}" style="width:${s.has?s.pct:0}%"></i></div>
+  ${sc?`<div style="margin-top:7px"><button class="do-btn sm" data-do="bhitopscale:${k}">${s.has?"Repetir":"Hacer"} solo ${sc.codes.length} items</button></div>`:""}</div>`;}
+function renderPanel(){
+  const el=document.getElementById("panel"), p=patient();
+  if(!selected){
+    el.innerHTML=`<div class="pheader"><span class="pc">${p.code}</span></div>
+      <button class="do-btn wide" data-do="bhitop">Hacer B-HiTOP (45 items)</button>
+      <p class="muted" style="margin-top:10px">Clic en una dimension del mapa para detalle y para hacer su escala.</p>
+      ${BHITOP_SCALES.map(s=>s.key).map(rowHTML).join("")}`;
+    bindDo(el); return;
+  }
+  if(selected&&selected.indexOf("facet:")===0){
+    const f=PID5_FACETS.find(x=>x.name===selected.slice(6)), fs=facetScore(f);
+    el.innerHTML=`<div class="pheader"><span class="pc">${f.name}</span><span class="val">${fs.has?fs.pct+"/100":"sin evaluar"}</span></div>
+      <div class="kind">Faceta PID-5 · ${LABELS[f.spectrum]}${fs.has?(fs.real?" · medido":" · simulado"):""}</div>
+      <div class="bar" style="margin-top:8px"><i class="${levelClass(fs.level,fs.has)}" style="width:${fs.has?fs.pct:0}%"></i></div>
+      <p class="muted" style="margin-top:12px">${f.summary}</p>
+      <button class="do-btn wide" style="margin-top:14px" data-do="pid5facet:${encodeURIComponent(f.name)}">${fs.real?"Repetir":"Hacer"} solo ${f.name} (${f.items.length} items)</button>
+      <button class="ghost" style="width:100%;margin-top:8px" data-do="pid5">${patient().pid5?"Repetir":"Hacer"} PID-5 completo (100 items)</button>`;
+    bindDo(el); return;
+  }
+  if(LEAF_LABEL[selected]){
+    const sp=LEAF_PARENT[selected], sc=leafScore(selected,sp);
+    const fac=PID5_FACETS.filter(f=>facetSub(f)===selected);
+    const sym=figureSymptomsForSub(selected);
+    const n=patient().neuro||{};
+    const r=(name,s2,extra)=>`<div class="scale"><div class="top"><span class="nm">${name}</span><span class="val">${s2.has?(s2.raw!=null?s2.raw+"/"+s2.max:s2.pct+"/100"):"sin evaluar"}</span></div>${s2.has?`<div class="bar"><i class="${levelClass(s2.level,s2.has)}" style="width:${s2.pct}%"></i></div>`:""}${extra||""}</div>`;
+    let measures="";
+    if(selected==="adhd"||selected==="asd"){
+      const list=VISIBLE_NEURO_INSTR[selected]||[];
+      measures=`<div class="kind" style="margin-top:12px">Instrumentos</div>`+list.map(([id,lbl])=>{const d=n[id];const sc2=d?{has:true,pct:d.pct,level:d.level||pctLevel(d.pct)}:{has:false};return r(lbl,sc2,`<div style="margin-top:6px"><button class="do-btn sm" data-do="${id}">${d?"Repetir":"Hacer"} ${lbl}</button></div>`);}).join("");
+      measures+=neuroDetailHTML(selected);
+    } else if(selected==="distress"){
+      const d=patient().k10, sc2=d?{has:true,pct:d.pct,level:d.level,raw:d.total,max:50}:{has:false};
+      measures=`<div class="kind" style="margin-top:12px">Escala agrupada</div>`+r("Kessler-10",sc2,`<div style="margin-top:6px"><button class="do-btn sm" data-do="k10">${d?"Repetir":"Hacer"} Kessler-10</button></div>`);
+    } else if(selected==="eating"){const d=(patient().scales||{})["SCOFF"],sc2=d?{has:true,pct:d.pct,level:d.level,raw:d.raw,max:d.max}:{has:false};
+      measures=`<div class="kind" style="margin-top:12px">Instrumento de cribado</div>`+r("SCOFF",sc2,`<div style="margin-top:6px"><button class="do-btn sm" data-do="SCOFF">${d?"Repetir":"Hacer"} SCOFF</button></div>`);
+    } else if(selected==="sexual"){const d=(patient().scales||{})["MGH-SFQ"],sc2=d?{has:true,pct:d.pct,level:d.level,raw:d.raw,max:d.max}:{has:false};
+      measures=`<div class="kind" style="margin-top:12px">Instrumento</div>`+r("MGH-SFQ",sc2,`<div style="margin-top:6px"><button class="do-btn sm" data-do="MGH-SFQ">${d?"Repetir":"Hacer"} MGH-SFQ</button></div>`);
+    }
+    if(["distress","fear","mania"].includes(selected)) measures+=`<div style="margin-top:10px"><button class="do-btn sm" data-do="idas">${patient().idas?"Repetir":"Hacer"} IDAS-II (99)</button></div>`;
+    el.innerHTML=`<div class="pheader"><span class="pc">${LEAF_LABEL[selected]}</span><span class="val">${sc.has?sc.pct+"/100":"sin evaluar"}</span></div>
+      <div class="kind">Subfactor · ${LABELS[sp]}</div>
+      <div class="bar" style="margin-top:8px"><i class="${levelClass(sc.level,sc.has)}" style="width:${sc.has?sc.pct:0}%"></i></div>
+      ${measures}
+      ${fac.length?`<div class="kind" style="margin-top:14px">Rasgos PID-5</div>${fac.map(f=>r(f.name,facetScore(f))).join("")}`:""}
+      ${sym.length?`<div class="kind" style="margin-top:14px">Sintomas</div>${sym.map(s=>r(s.name,symScore(s),symActionHTML(s))).join("")}`:""}`;
+    bindDo(el); return;
+  }
+  if(selected&&selected.indexOf("dx:")===0){
+    const d=DX_SCALES.find(x=>x.name===selected.slice(3)), ss=dxScore(d), real=!!realScore(d.src);
+    el.innerHTML=`<div class="pheader"><span class="pc">${d.name}</span><span class="val">${ss.has?(ss.raw!=null?ss.raw+"/"+ss.max:ss.pct+"/100"):"sin evaluar"}</span></div>
+      <div class="kind">Trastorno · instrumento: ${d.src}${real?" · medido":" · simulado"}</div>
+      <div class="bar" style="margin-top:8px"><i class="${levelClass(ss.level,ss.has)}" style="width:${ss.has?ss.pct:0}%"></i></div>
+      ${SCALES[d.src]?`<button class="do-btn wide" style="margin-top:14px" data-do="${d.src}">${real?"Repetir":"Hacer"} ${d.src}</button>${dxDetailHTML(d.src)}`:`<p class="muted" style="margin-top:12px">Escala (${d.src}) pendiente de cablear.</p>`}`;
+    bindDo(el); return;
+  }
+  if(selected&&selected.indexOf("sym:")===0){
+    const s=SYMPTOMS.find(x=>x.name===selected.slice(4)), ss=symScore(s);
+    el.innerHTML=`<div class="pheader"><span class="pc">${s.name}</span><span class="val">${ss.has?ss.pct+"/100":"sin evaluar"}</span></div>
+      <div class="kind">Sintoma · ${s.src} · ${LABELS[s.spectrum]}${ss.has?(ss.real?" · medido":" · simulado"):""}</div>
+      <div class="bar" style="margin-top:8px"><i class="${levelClass(ss.level,ss.has)}" style="width:${ss.has?ss.pct:0}%"></i></div>
+      ${symActionHTML(s,true)||`<p class="muted" style="margin-top:12px">Dimension de sintomas (${s.src}). Sin cuestionario anexado todavia.</p>`}
+      ${symDetailHTML(s)}`;
+    bindDo(el);
+    return;
+  }
+  if(isTransdiagnosticScale(selected)){
+    const s=score(selected);
+    el.innerHTML=`<div class="pheader"><span class="pc">${LABELS[selected]}</span><span class="val">${scoreText(s)}</span></div>
+      <div class="kind">Proceso transdiagnostico / contexto · no entra al factor P</div>
+      <div class="bar" style="margin-top:8px"><i class="${levelClass(s.level,s.has)}" style="width:${s.has?s.pct:0}%"></i></div>
+      <button class="do-btn wide" style="margin-top:14px" data-do="${selected}">${s.has?"Repetir":"Hacer"} ${contextButtonLabel(selected)}</button>
+      ${transdiagnosticDetailHTML(selected)}`;
+    bindDo(el); return;
+  }
+  if(selected==="neuro"){
+    const n=p.neuro||{}, sN=score("neuro");
+    const row=(type,name,res,pos)=>`<div class="scale"><div class="top"><span class="nm">${name}</span>
+        <span class="val">${res!=null?res:"sin evaluar"}</span></div>
+        ${res!=null?`<div class="bar"><i class="${sevClass(pos,true)}" style="width:${pos}%"></i></div>`:""}
+        <div style="margin-top:8px"><button class="do-btn sm" data-do="${type}">${res!=null?"Repetir":"Hacer"} ${name}</button></div></div>`;
+    el.innerHTML=`<div class="pheader"><span class="pc">Neurodevelopmental</span><span class="val">${sN.has?"pct "+sN.pct:"s/d"}</span></div>
+      <div class="kind">Fuera del B-HiTOP · se mide con escalas especificas</div>
+      ${row("asrs18","ASRS-18 (TDAH)", n.asrs18?`${n.asrs18.pct}/100`:null, n.asrs18?n.asrs18.pct:0)}
+      ${row("aq10","AQ-10 (rasgos TEA)", n.aq10?`${n.aq10.count}/10 · ${n.aq10.positive?"positivo":"no positivo"}`:null, n.aq10?n.aq10.pct:0)}`;
+    bindDo(el); return;
+  }
+  // nodo B-HiTOP
+  const s=score(selected), label=LABELS[selected], items=ITEMS_PER_SCALE[selected]||[];
+  const scaleDef=BHITOP_SCALES.find(x=>x.key===selected);
+  const composite=(selected==="external"||selected==="pfactor");
+  const ctx = selected==="pfactor" ? `
+    <div class="kind" style="margin-top:20px">Transdiagnóstico <span style="text-transform:none">(procesos/contexto · no entra al computo del p)</span></div>
+    ${TRANSDIAGNOSTIC_SCALES.map(([k])=>{const cs=score(k);return `
+      <div class="scale"><div class="top"><span class="nm">${LABELS[k]}</span><span class="val">${scoreText(cs)}</span></div>
+      <div class="bar"><i class="${levelClass(cs.level,cs.has)}" style="width:${cs.has?cs.pct:0}%"></i></div>
+      <div style="margin-top:8px"><button class="do-btn sm" data-do="${k}">${cs.has?"Repetir":"Hacer"} ${contextButtonLabel(k)}</button></div></div>`}).join("")}` : "";
+  el.innerHTML=`<div class="pheader"><span class="pc">${label}</span><span class="val">${scoreText(s)}</span></div>
+    <div class="kind">${composite?"Secundaria · compuesta del B-HiTOP":"Espectro primario · B-HiTOP"}</div>
+    <div class="bar" style="margin-top:8px"><i class="${sevClass(s.pct,s.has)}" style="width:${s.pct}%"></i></div>
+    ${scaleDef?`<button class="do-btn wide" style="margin-top:14px" data-do="bhitopscale:${selected}">${s.has?"Repetir":"Hacer"} solo ${label} (${items.length} items)</button>`:""}
+    <button class="${scaleDef?"ghost":"do-btn wide"}" style="width:100%;margin-top:${scaleDef?8:14}px" data-do="bhitop">${s.has?"Repetir B-HiTOP":"Hacer B-HiTOP completo"} (45 items)</button>
+    ${ctx}
+    ${(()=>{const fac=PID5_FACETS.filter(f=>f.spectrum===selected);if(!fac.length)return"";return `
+      <div class="kind" style="margin-top:18px">Facetas PID-5 (${fac.length})</div>
+      <button class="do-btn sm" style="margin:4px 0 8px" data-do="pid5">${patient().pid5?"Repetir":"Hacer"} PID-5</button>
+      ${fac.map(f=>{const fs=facetScore(f);return `<div class="scale" data-facet="${f.name}" style="cursor:pointer">
+        <div class="top"><span class="nm">${f.name}</span><span class="val">${fs.has?fs.pct+"/100":"s/d"}</span></div>
+        <div class="bar"><i class="${levelClass(fs.level,fs.has)}" style="width:${fs.has?fs.pct:0}%"></i></div></div>`}).join("")}`;})()}`;
+  bindDo(el); bindFacets(el);
+}
+
+/* ===================== Administracion (un item por pantalla) ===================== */
+function adminScale(type){
+  let items,opts,title,instr,itemOpts=null;
+  if(type.startsWith("symbank:")){
+    const name=decodeURIComponent(type.slice("symbank:".length)), s=SYMPTOMS.find(x=>x.name===name), bank=getSymBank(s);
+    items=bank.items;opts=bank.opts;itemOpts=bank.itemOpts||null;title=bank.label;instr=bank.instr;
+  }
+  else if(type.startsWith("bhitopscale:")){
+    const key=type.slice("bhitopscale:".length), sc=BHITOP_SCALES.find(s=>s.key===key);
+    items=sc.codes.map(c=>(BHITOP_ITEMS.find(i=>i.code===c)||{}).text).filter(Boolean);
+    opts=["Para nada","Un poco","Moderadamente","Mucho"];title="B-HiTOP · "+sc.label;instr="Ultimos 12 meses · items anexados a esta dimension.";
+  }
+  else if(type.startsWith("pid5facet:")){
+    const name=decodeURIComponent(type.slice("pid5facet:".length)), f=PID5_FACETS.find(x=>x.name===name);
+    items=f.items.map(id=>PID5_ITEMS[PID5_INDEX_BY_ID.get(id)]);opts=["Muy en desacuerdo","Moderadamente en desacuerdo","Moderadamente de acuerdo","Muy de acuerdo"];
+    title="PID-5 · "+f.name;instr="Items anexados a esta faceta.";
+  }
+  else if(type==="bhitop"){items=BHITOP_ITEMS.map(i=>i.text);opts=["Para nada","Un poco","Moderadamente","Mucho"];title="B-HiTOP";instr="Ultimos 12 meses · que tanto te describio cada frase.";}
+  else if(type==="asrs6"){items=ASRS6;opts=["Nunca","Rara vez","A veces","A menudo","Muy a menudo"];title="ASRS v1.1 — Parte A";instr="Ultimos 6 meses · frecuencia.";}
+  else if(type==="aq10"){items=AQ10;opts=["Totalmente en desacuerdo","Parcialmente en desacuerdo","Parcialmente de acuerdo","Totalmente de acuerdo"];title="AQ-10";instr="Grado de acuerdo con cada frase.";}
+  else if(type==="swls"){items=SWLS;opts=SWLS_OPTS;title="SWLS · Satisfaccion con la vida";instr="Grado de acuerdo con cada frase.";}
+  else if(type==="wsas"){items=WSAS;opts=WSAS_OPTS;title="WHODAS-12 (funcionamiento)";instr="Ultimos 30 dias · cuanta dificultad tuvo para...";}
+  else if(type==="aces"){items=ACE_ITEMS;opts=ACE_OPTS;title="ACEs · Experiencias adversas tempranas";instr="Antes de los 18 anos · marcar Si solo si aplica.";}
+  else if(type==="eq5d"){items=EQ5D_ITEMS;opts=EQ5D_OPTS;title="EQ-5D-5L · Calidad de vida";instr="Hoy · seleccione el nivel de problema en cada dimension.";}
+  else if(type==="ders16"){items=DERS16_ITEMS;opts=DERS16_OPTS;title="DERS-16 · Regulacion emocional";instr="Ultimas semanas · que tan frecuente aplica.";}
+  else if(type==="aaq2"){items=AAQII_ITEMS;opts=AAQII_OPTS;title="AAQ-II · Flexibilidad psicologica";instr="Que tan verdadera es cada frase para usted.";}
+  else if(type==="uppsp"){items=UPPSP_ITEMS;opts=UPPSP_OPTS;title="Short UPPS-P · Impulsividad";instr="Que tanto describe su forma habitual de actuar.";}
+  else if(type==="ptq"){items=PTQ_ITEMS;opts=PTQ_OPTS;title="PTQ-15 · Pensamiento repetitivo";instr="Cuando piensa repetidamente en problemas o experiencias negativas.";}
+  else if(type==="djg6"){items=DJG6_ITEMS;opts=DJG6_OPTS;title="DJG-6 · Soledad";instr="Como se siente respecto a sus vinculos cercanos y red social.";}
+  else if(type==="efeco21"){items=EFECO21_ITEMS;opts=EFECO21_OPTS;title="EFECO-21 · Funciones ejecutivas";instr="0=Nunca · 3=Con mucha frecuencia. Inhibicion incluida; Control emocional fuera.";}
+  else if(type==="pid5"){items=PID5_ITEMS;opts=["Muy en desacuerdo","Moderadamente en desacuerdo","Moderadamente de acuerdo","Muy de acuerdo"];title="PID-5";instr="Que tan de acuerdo estas con cada frase.";}
+  else if(type==="k10"){items=K10;opts=["Nunca","Pocas veces","Algunas veces","Muchas veces","Siempre"];title="Kessler-10";instr="Ultimos 30 dias · con que frecuencia se sintio asi.";}
+  else if(type==="idas"){items=IDAS99;opts=["En absoluto","Un poco","Moderadamente","Bastante","Extremadamente"];title="IDAS-II (99 items)";instr="Ultimas 2 semanas, incluido hoy · que tan bien te describe.";}
+  else if(NEURO_INSTR[type]){const ni=NEURO_INSTR[type];items=ni.items;opts=ni.opts;title=ni.label;instr=ni.instr;}
+  else if(SCALES[type]){const sc=SCALES[type];title=sc.label;instr=sc.instr||"";
+    if(sc.groups){items=sc.groups.map(()=>sc.stem||"Elige la frase que mejor te describe.");itemOpts=sc.groups;}
+    else if(sc.itemOpts){items=sc.items;itemOpts=sc.itemOpts;}
+    else{items=sc.items;opts=sc.opts;}}
+  else{items=WSAS;opts=WSAS_OPTS;title="WHODAS-12 (funcionamiento)";instr="Ultimos 30 dias · cuanta dificultad tuvo para...";}
+  administering={type,title,instr,items,opts,itemOpts,answers:{},idx:0,note:""};
+  renderModal();
+}
+function renderModal(){
+  const host=document.getElementById("modal");
+  if(!administering){host.classList.add("hidden");host.innerHTML="";return;}
+  host.classList.remove("hidden");
+  const A=administering, i=A.idx, total=A.items.length, cur=A.answers[i], done=Object.keys(A.answers).length;
+  host.innerHTML=`<div class="admin-card">
+    <div class="admin-top">
+      <div><div class="admin-title">${A.title}</div><div class="muted">${A.instr}</div></div>
+      <button class="x" data-x>&#10005;</button>
+    </div>
+    <div class="admin-prog"><div style="width:${Math.round(i/total*100)}%"></div></div>
+    <div class="admin-count">Item ${i+1} de ${total}</div>
+    <div class="admin-q">${A.items[i]}</div>
+    <div class="admin-opts">${(A.itemOpts?A.itemOpts[i]:A.opts).map((o,v)=>`<button class="opt ${cur===v?"on":""}" data-v="${v}">${o}</button>`).join("")}</div>
+    <div class="admin-nav">
+      <button class="ghost" data-back ${i===0?"disabled":""}>Atras</button>
+      <span class="muted">${A.note?`<span style="color:var(--high-tx)">${A.note}</span>`:`${done}/${total} respondidos`}</span>
+      ${i===total-1?`<button class="do-btn" data-finish>Calcular</button>`:`<button class="ghost" data-skip>Saltar</button>`}
+    </div></div>`;
+  host.querySelector("[data-x]").onclick=()=>{administering=null;renderModal();};
+  const back=host.querySelector("[data-back]"); if(back&&i>0)back.onclick=()=>{A.idx--;A.note="";renderModal();};
+  const skip=host.querySelector("[data-skip]"); if(skip)skip.onclick=()=>{if(i<total-1){A.idx++;A.note="";renderModal();}};
+  const fin=host.querySelector("[data-finish]"); if(fin)fin.onclick=finishAdmin;
+  host.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    A.answers[i]=+b.dataset.v; A.note="";
+    if(i<total-1){A.idx++; setTimeout(renderModal,130);} else renderModal();
+  });
+  host.onclick=e=>{if(e.target===host){administering=null;renderModal();}};
+}
+function finishAdmin(){
+  const A=administering,a=A.answers,total=A.items.length,t=A.type,p=patient();
+  if(Object.keys(a).length<total){
+    for(let k=0;k<total;k++){if(a[k]===undefined){A.idx=k;break;}}
+    A.note=`Faltan ${total-Object.keys(a).length} items.`;renderModal();return;
+  }
+  if(t.startsWith("bhitopscale:")){
+    const key=t.slice("bhitopscale:".length), sc=BHITOP_SCALES.find(s=>s.key===key);
+    p.bhitop=p.bhitop||{};p.bhitop[key]=computeBHitopScale(key,sc.codes.map((_,i)=>a[i]+1));
+  }
+  else if(t.startsWith("pid5facet:")){
+    const name=decodeURIComponent(t.slice("pid5facet:".length)), f=PID5_FACETS.find(x=>x.name===name);
+    p.pid5=p.pid5||{};p.pid5[f.name]=computePID5Facet(f,f.items.map((id,i)=>({id,value:a[i]})));
+  }
+  else if(t==="bhitop"){const byCode={};BHITOP_ITEMS.forEach((it,i)=>byCode[it.code]=a[i]+1);p.bhitop=computeBHitop(byCode);}
+  else if(t==="asrs6"){p.neuro=p.neuro||{};p.neuro.asrs6=computeASRS6(ASRS6.map((_,i)=>a[i]));}
+  else if(t==="aq10"){p.neuro=p.neuro||{};p.neuro.aq10=computeAQ10(AQ10.map((_,i)=>a[i]));}
+  else if(t==="swls"){p.context=p.context||{};p.context.swls=computeSWLS(SWLS.map((_,i)=>a[i]+1));}
+  else if(t==="wsas"){p.context=p.context||{};p.context.wsas=computeWSAS(WSAS.map((_,i)=>a[i]+1));}
+  else if(t==="aces"){p.context=p.context||{};p.context.aces=computeACES(ACE_ITEMS.map((_,i)=>a[i]));}
+  else if(t==="eq5d"){p.context=p.context||{};p.context.eq5d=computeEQ5D(EQ5D_ITEMS.map((_,i)=>a[i]));}
+  else if(t==="ders16"){p.context=p.context||{};p.context.ders16=computeDERS16(DERS16_ITEMS.map((_,i)=>a[i]));}
+  else if(t==="aaq2"){p.context=p.context||{};p.context.aaq2=computeAAQII(AAQII_ITEMS.map((_,i)=>a[i]));}
+  else if(t==="uppsp"){p.context=p.context||{};p.context.uppsp=computeUPPSP(UPPSP_ITEMS.map((_,i)=>a[i]));}
+  else if(t==="ptq"){p.context=p.context||{};p.context.ptq=computePTQ(PTQ_ITEMS.map((_,i)=>a[i]));}
+  else if(t==="djg6"){p.context=p.context||{};p.context.djg6=computeDJG6(DJG6_ITEMS.map((_,i)=>a[i]));}
+  else if(t==="efeco21"){p.context=p.context||{};p.context.efeco21=computeEFECO21(EFECO21_ITEMS.map((_,i)=>a[i]));}
+  else if(t==="pid5"){p.pid5=computePID5(a);}
+  else if(t==="k10"){p.k10=computeK10(K10.map((_,i)=>a[i]+1));}
+  else if(t==="idas"){p.idas=computeIDAS(IDAS99.map((_,i)=>a[i]+1));}
+  else if(t.startsWith("symbank:")){
+    const name=decodeURIComponent(t.slice("symbank:".length)), s=SYMPTOMS.find(x=>x.name===name), bank=getSymBank(s), answers=bank.items.map((_,i)=>a[i]), res=bank.score(answers);
+    if(bank.src==="IDAS-II"){p.idas=p.idas||{};const sc=IDAS_SCALES.find(x=>x.id===s.idas);p.idas[sc.id]=res;}
+    else if(bank.subName){
+      p.scales=p.scales||{};const prev=p.scales[bank.src]||{};
+      p.scales[bank.src]={...prev,sub:{...(prev.sub||{})},details:{...(prev.details||{})}};
+      p.scales[bank.src].sub[bank.subName]=res.pct;p.scales[bank.src].details[bank.subName]=res;
+    }else{p.scales=p.scales||{};p.scales[bank.src]=attachScaleDimensions(bank.src,res,answers);}
+  }
+  else if(NEURO_INSTR[t]){p.neuro=p.neuro||{};p.neuro[t]=NEURO_INSTR[t].score(NEURO_INSTR[t].items.map((_,i)=>a[i]));}
+  else if(SCALES[t]){
+    const sc=SCALES[t];p.scales=p.scales||{};const arr=sc.groups||sc.items, answers=arr.map((_,i)=>a[i]);
+    p.scales[t]=attachScaleDimensions(t,sc.score(answers),answers);
+  }
+  else{p.context=p.context||{};p.context.wsas=computeWSAS(WSAS.map((_,i)=>a[i]+1));}
+  administering=null;renderModal();renderMap();renderPanel();
+}
+
+/* ===================== CSV ===================== */
+function exportCSV(){
+  const rows=[["patient_code","fecha","dominio","escala","valor","percentil"]];
+  const today=new Date().toISOString().slice(0,10);
+	  PATIENTS.forEach(p=>{
+	    BHITOP_SCALES.forEach(s=>{const d=p.bhitop&&p.bhitop[s.key];if(d)rows.push([p.code,today,s.label,"B-HiTOP",d.mean,d.pct]);});
+	    const n=p.neuro||{};
+	    const neuroLabels={asrs6:"ASRS-6",aq10:"AQ-10",...Object.fromEntries(Object.entries(NEURO_INSTR).map(([id,d])=>[id,d.label]))};
+	    Object.entries(n).forEach(([id,d])=>{
+	      const label=neuroLabels[id]||id;
+	      const denom=id==="aq10"?10:id==="asrs6"?6:null;
+	      const val=d.count!=null&&denom?`${d.count}/${denom}`:(d.raw!=null?`${d.raw}/${d.max}`:(d.pct!=null?`${d.pct}/100`:""));
+	      rows.push([p.code,today,"Neurodevelopmental",label,val,d.pct!=null?d.pct:""]);
+	    });
+	    const c=p.context||{};
+    TRANSDIAGNOSTIC_SCALES.forEach(([id,label])=>{
+      const d=c[id]; if(!d)return;
+      rows.push([p.code,today,"Transdiagnostico",label,d.profile||d.total+"/"+d.max,d.pct]);
+    });
+    Object.entries(p.pid5||{}).forEach(([name,d])=>rows.push([p.code,today,"Rasgo PID-5",name,d.mean!=null?d.mean:d.raw+"/"+d.max,d.pct]));
+    Object.entries(p.idas||{}).forEach(([id,d])=>{const sc=IDAS_SCALES.find(x=>x.id===id);rows.push([p.code,today,"Sintoma IDAS-II",sc?sc.name:id,d.raw+"/"+d.max,d.pct]);});
+    Object.entries(p.scales||{}).forEach(([src,d])=>{
+      if(d.details)Object.entries(d.details).forEach(([name,x])=>rows.push([p.code,today,src,name,x.raw+"/"+x.max,x.pct]));
+      else if(d.raw!=null)rows.push([p.code,today,src,src,d.raw+"/"+d.max,d.pct]);
+    });
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="hitop_export.csv";a.click();
+}
+
+/* ===================== Boot ===================== */
+function boot(){
+  const sel=document.getElementById("patientSel");
+  sel.innerHTML=PATIENTS.map((p,i)=>`<option value="${i}">${p.code}</option>`).join("");
+  sel.onchange=e=>{pIndex=+e.target.value;selected=null;renderMap();renderPanel();};
+  document.getElementById("csvBtn").onclick=exportCSV;
+  renderMap();renderPanel();
+}
+const THEME_KEY="hitop_theme";
+function setTheme(t){document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem(THEME_KEY,t);}catch(e){}
+  document.querySelectorAll("#themeSeg button").forEach(b=>b.classList.toggle("on",b.dataset.theme===t));}
+document.querySelectorAll("#themeSeg button").forEach(b=>b.onclick=()=>setTheme(b.dataset.theme));
+setTheme((function(){try{return localStorage.getItem(THEME_KEY)}catch(e){return null}})()||"claro");
+function tryGate(){
+  if(document.getElementById("gateInput").value.trim()==="210894"){
+    document.getElementById("gate").classList.add("hidden");
+    document.getElementById("appShell").classList.remove("hidden");boot();
+  }else document.getElementById("gateErr").textContent="Clave incorrecta.";
+}
+document.getElementById("gateBtn").onclick=tryGate;
+document.getElementById("gateInput").addEventListener("keydown",e=>{if(e.key==="Enter")tryGate();});
+document.getElementById("gateInput").focus();
+</script>
+</body>
+</html>
