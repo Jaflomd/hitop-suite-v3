@@ -75,10 +75,18 @@ Artefactos Sprint 1:
 - `package.json`: comandos `npm test` y `npm run check:syntax`.
 
 ### Sprint 2 - Backend seguro
-- Autenticacion server-side.
-- Base de datos cifrada.
-- Pacientes, sesiones y evaluaciones separadas.
-- Auditoria y backups.
+- [x] Autenticacion server-side local.
+- [x] Base de datos local Docker/Postgres preparada; identificadores opcionales cifrados por campo.
+- [x] Pacientes, sesiones y evaluaciones separadas.
+- [x] Auditoria append-only y backups locales cifrados.
+- [ ] Hardening para produccion real: MFA, TLS obligatorio, RLS/roles DB, restauracion probada, retencion, deploy bajo BAA.
+
+Artefactos Sprint 2 local:
+
+- `BACKEND_LOCAL_SPEC.md`: alcance y limites.
+- `backend/`: Django app.
+- `docker-compose.yml`: Postgres + web local.
+- `backend/scripts/backup_local.sh`: backup local cifrado.
 
 ### Sprint 3 - Validacion clinica
 - Piloto con casos pseudonimizados.

@@ -15,11 +15,31 @@ Beta interna autocontenida para exploracion dimensional HiTOP + neurodesarrollo.
 - Checklist clinico por escala: `CLINICAL_REVIEW_CHECKLIST.md`.
 - Tests automaticos de scoring: `npm test`.
 
+## Backend Local
+
+- Stack: Django + PostgreSQL local via Docker Compose.
+- Carpeta: `backend/`.
+- SPEC: `BACKEND_LOCAL_SPEC.md`.
+- Auth: sesiones server-side de Django.
+- Datos: `Patient`, `AssessmentSession`, `AssessmentResult`, `AuditLog`, `BackupRun`.
+- Backups: `backend/scripts/backup_local.sh`, cifrado con OpenSSL y excluido de Git.
+
+Arranque:
+
+```bash
+cp .env.example .env
+docker compose up --build
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py createsuperuser
+```
+
 ## Verificacion
 
 ```bash
 npm test
 npm run check:syntax
+python backend/manage.py check
+python backend/manage.py test clinical
 ```
 
 ## Estado
