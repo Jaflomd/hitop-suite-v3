@@ -37,6 +37,8 @@
       </section>
     </div>
 
+    <section id="dimensionMap"></section>
+
     <section id="scaleCard" class="card">
       <h2 id="scaleTitle">Escala</h2>
       <p id="scaleInstr" class="muted"></p>
@@ -55,6 +57,7 @@
   </section>
 </main>
 <script src="{% static 'clinical/scale_catalog.js' %}"></script>
+<script src="{% static 'clinical/dimensional_map.js' %}"></script>
 <script>
 const state={patient:null,assignments:[],assignment:null,results:[],currentScale:null};
 function csrfToken(){const m=document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);return m?decodeURIComponent(m[1]):document.querySelector("[name=csrfmiddlewaretoken]").value;}
@@ -62,17 +65,32 @@ async function api(path,opts={}){const method=opts.method||"GET";const res=await
 function showApp(){loginView.classList.add("hidden");appView.classList.remove("hidden");logoutBtn.classList.remove("hidden");}
 function showLogin(){loginView.classList.remove("hidden");appView.classList.add("hidden");logoutBtn.classList.add("hidden");}
 function selectedAssignment(){return state.assignments.find(a=>String(a.id)===assignmentSel.value)||state.assignments[0]||null;}
+function upsertAssignment(assignment){
+  if(!assignment)return;
+  const idx=state.assignments.findIndex(a=>a.id===assignment.id);
+  if(idx>=0)state.assignments[idx]=assignment;else state.assignments.unshift(assignment);
+  state.assignment=assignment;
+}
+function scaleFromId(scaleId){
+  const scale=(state.assignment&&state.assignment.scales||[]).find(s=>s.scale_id===scaleId);
+  return scale?{scale_id:scale.scale_id,scale_label:scale.scale_label}:null;
+}
 function renderAssignments(){
   subjectId.textContent=state.patient?state.patient.subject_id:"s/d";
   assignmentCount.textContent=state.assignments.length;
   assignmentSel.innerHTML=state.assignments.map(a=>`<option value="${a.id}">${a.template_name} · ${a.progress.done}/${a.progress.total}</option>`).join("");
+  if(state.assignment)assignmentSel.value=state.assignment.id;
   state.assignment=selectedAssignment();
   renderProgress();
+  renderDimensionalView();
 }
 function renderProgress(){
   const a=state.assignment;if(!a){progressBar.style.width="0%";progressText.textContent="Sin bateria asignada.";return;}
   progressBar.style.width=a.progress.percent+"%";
   progressText.textContent=`${a.progress.done}/${a.progress.total} escalas · ${a.status}`;
+}
+function renderDimensionalView(){
+  HITOP_RENDER_DIMENSIONAL_MAP(dimensionMap,{assignment:state.assignment,results:state.results,selectedScaleId:state.currentScale&&state.currentScale.scale_id,mode:"patient",onSelectScale:(scaleId)=>{const scale=scaleFromId(scaleId);if(scale){state.currentScale=scale;renderScale();renderDimensionalView();}},onPrimaryAction:(scaleId)=>{const scale=scaleFromId(scaleId);if(scale){state.currentScale=scale;renderScale();renderDimensionalView();scaleCard.scrollIntoView({behavior:"smooth",block:"start"});}}});
 }
 async function loadAssignments(){
   const data=await api("/api/patient/assignments/");
@@ -85,7 +103,7 @@ async function loadNext(){
   state.assignment=selectedAssignment();
   if(!state.assignment){scaleTitle.textContent="Sin bateria";items.innerHTML="";return;}
   const data=await api(`/api/patient/assignments/${state.assignment.id}/next/`);
-  state.assignment=data.assignment;
+  upsertAssignment(data.assignment);
   state.currentScale=data.next_scale;
   renderAssignments();
   renderScale();
@@ -95,9 +113,11 @@ async function loadResults(){
   const data=await api(`/api/patient/assignments/${state.assignment.id}/results/`);
   state.results=data.results||[];
   resultsList.innerHTML=state.results.length?state.results.map(r=>`<div class="row"><strong>${r.scale_label}</strong><span>${r.raw_value}/${r.max_value} · ${r.percentile}/100</span></div>`).join(""):"<p class='muted'>Sin resultados registrados.</p>";
+  renderDimensionalView();
 }
 function renderScale(){
   scaleMsg.textContent="";
+  renderDimensionalView();
   if(!state.currentScale){scaleTitle.textContent="Bateria completa";scaleInstr.textContent="Devuelve la tablet al equipo.";items.innerHTML="";saveScaleBtn.disabled=true;return;}
   const scale=HITOP_SCALE_CATALOG[state.currentScale.scale_id];
   saveScaleBtn.disabled=false;
@@ -111,7 +131,7 @@ async function saveScale(){
   if(answers.some(v=>v===null)){scaleMsg.textContent="Faltan items por responder.";return;}
   const scored=HITOP_SCORE_SCALE(scale,answers);
   const data=await api(`/api/patient/assignments/${state.assignment.id}/results/`,{method:"POST",body:JSON.stringify(scored)});
-  state.assignment=data.assignment;
+  upsertAssignment(data.assignment);
   scaleMsg.textContent="Guardado.";
   await loadNext();
   await loadResults();

@@ -34,17 +34,25 @@
       <div id="assignmentList"></div>
     </section>
   </div>
+  <section id="dimensionMap"></section>
   <section class="card">
     <h2>Resultados longitudinales</h2>
     <table><thead><tr><th>Escala</th><th>Valor</th><th>Severidad</th><th>Modo</th><th>Fecha</th></tr></thead><tbody id="resultRows"></tbody></table>
   </section>
 </main>
+<script src="{% static 'clinical/scale_catalog.js' %}"></script>
+<script src="{% static 'clinical/dimensional_map.js' %}"></script>
 <script>
-let patients=[], selected=null;
+let patients=[], selected=null, selectedAssignment=null, selectedScaleId="";
 function csrfToken(){const m=document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);return m?decodeURIComponent(m[1]):document.querySelector("[name=csrfmiddlewaretoken]").value;}
 async function api(path,opts={}){const method=opts.method||"GET";const res=await fetch(path,{credentials:"same-origin",headers:{"Content-Type":"application/json",...(method==="GET"?{}:{"X-CSRFToken":csrfToken()}),...(opts.headers||{})},...opts});const data=await res.json();if(!res.ok||data.ok===false)throw new Error(data.error||"Error");return data;}
 function showApp(){loginView.classList.add("hidden");appView.classList.remove("hidden");}
 function showLogin(){loginView.classList.remove("hidden");appView.classList.add("hidden");}
+function renderDimensionalView(){
+  const assignment=selectedAssignment||(selected&&selected.assignments&&selected.assignments[0])||null;
+  const results=selected&&selected.results?selected.results:[];
+  HITOP_RENDER_DIMENSIONAL_MAP(dimensionMap,{assignment:assignment,results:results,selectedScaleId:selectedScaleId,mode:"clinician",onSelectScale:(scaleId)=>{selectedScaleId=scaleId;renderDimensionalView();}});
+}
 function renderPatients(){
   patientList.innerHTML=patients.map(r=>{
     const p=r.patient,a=r.latest_assignment,prog=a?a.progress:{done:0,total:0,percent:0};
@@ -56,14 +64,19 @@ async function loadPatients(){
   const q=searchBox.value.trim();
   const data=await api("/api/clinician/patients/"+(q?`?q=${encodeURIComponent(q)}`:""));
   patients=data.patients;renderPatients();
+  renderDimensionalView();
 }
 async function loadProfile(id){
   const data=await api(`/api/clinician/patients/${id}/profile/`);
   selected=data;
+  selectedAssignment=data.assignments[0]||null;
+  selectedScaleId=selectedAssignment?((selectedAssignment.progress.pending||[])[0]||((selectedAssignment.scales||[])[0]||{}).scale_id||""):"";
   profileTitle.textContent=data.patient.subject_id;
   profileMeta.textContent=`${data.assignments.length} baterias · ${data.results.length} resultados`;
-  assignmentList.innerHTML=data.assignments.map(a=>`<div class="row"><strong>${a.template_name}</strong><span>${a.progress.done}/${a.progress.total} · ${a.status}</span></div>`).join("")||"<p class='muted'>Sin baterias.</p>";
+  assignmentList.innerHTML=data.assignments.map(a=>`<button class="ghost row" data-assignment="${a.id}"><strong>${a.template_name}</strong><span>${a.progress.done}/${a.progress.total} · ${a.status}</span></button>`).join("")||"<p class='muted'>Sin baterias.</p>";
+  document.querySelectorAll("[data-assignment]").forEach(b=>b.onclick=()=>{selectedAssignment=selected.assignments.find(a=>String(a.id)===b.dataset.assignment)||selectedAssignment;selectedScaleId=(selectedAssignment.progress.pending||[])[0]||((selectedAssignment.scales||[])[0]||{}).scale_id||"";renderDimensionalView();});
   resultRows.innerHTML=data.results.map(r=>`<tr><td>${r.scale_label}</td><td>${r.raw_value}/${r.max_value} · ${r.percentile}/100</td><td>${r.severity}</td><td>${r.administration_mode}</td><td>${r.created_at.slice(0,10)}</td></tr>`).join("")||"<tr><td colspan='5'>Sin resultados.</td></tr>";
+  renderDimensionalView();
 }
 refreshBtn.onclick=loadPatients;searchBox.onkeydown=e=>{if(e.key==="Enter")loadPatients();};
 staffLoginForm.onsubmit=async e=>{e.preventDefault();loginMsg.textContent="";try{await api("/api/auth/login/",{method:"POST",body:JSON.stringify({username:username.value,password:password.value})});showApp();await loadPatients();}catch(ex){loginMsg.textContent=ex.message;}};

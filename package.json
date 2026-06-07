@@ -8,6 +8,6 @@
     "check:syntax": "perl -0777 -ne 'print $1 if /<script>(.*)<\\/script>/s' index.html > /tmp/hitop-inline-check.js && node --check /tmp/hitop-inline-check.js",
     "backend:check": "cd backend && python manage.py check",
     "backend:test": "cd backend && python manage.py test clinical",
-    "check:webapp": "node --check backend/clinical/static/clinical/scale_catalog.js"
+    "check:webapp": "node --check backend/clinical/static/clinical/scale_catalog.js && node --check backend/clinical/static/clinical/dimensional_map.js"
   }
 }

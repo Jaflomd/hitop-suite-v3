@@ -45,14 +45,32 @@
     <label>Buscar por HCL exacto<input id="searchBox"></label>
     <table><thead><tr><th>Paciente</th><th>HCL</th><th>Bateria</th><th>Progreso</th><th>Estado</th><th>Accion</th></tr></thead><tbody id="patientRows"></tbody></table>
   </section>
+  <section id="dimensionMap"></section>
 </main>
+<script src="{% static 'clinical/scale_catalog.js' %}"></script>
+<script src="{% static 'clinical/dimensional_map.js' %}"></script>
 <script>
-let templates=[], rows=[], lastTokenUrl="";
+let templates=[], rows=[], lastTokenUrl="", selectedAssignment=null, selectedResults=[], selectedScaleId="";
 function csrfToken(){const m=document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);return m?decodeURIComponent(m[1]):document.querySelector("[name=csrfmiddlewaretoken]").value;}
 async function api(path,opts={}){const method=opts.method||"GET";const res=await fetch(path,{credentials:"same-origin",headers:{"Content-Type":"application/json",...(method==="GET"?{}:{"X-CSRFToken":csrfToken()}),...(opts.headers||{})},...opts});const data=await res.json();if(!res.ok||data.ok===false)throw new Error(data.error||"Error");return data;}
 function showApp(){loginView.classList.add("hidden");appView.classList.remove("hidden");}
 function showLogin(){loginView.classList.remove("hidden");appView.classList.add("hidden");}
 function renderTemplates(){templateSel.innerHTML=templates.map(t=>`<option value="${t.id}">${t.name} (${t.scales.length})</option>`).join("");}
+function renderDimensionalView(){
+  HITOP_RENDER_DIMENSIONAL_MAP(dimensionMap,{assignment:selectedAssignment,results:selectedResults,selectedScaleId:selectedScaleId,mode:"research",onSelectScale:(scaleId)=>{selectedScaleId=scaleId;renderDimensionalView();}});
+}
+async function selectAssignment(id){
+  if(!id){selectedAssignment=null;selectedResults=[];selectedScaleId="";renderDimensionalView();return;}
+  assignmentSel.value=id;
+  const data=await api(`/api/research/assignments/${id}/progress/`);
+  selectedAssignment=data.assignment;
+  selectedResults=data.results||[];
+  if(!selectedScaleId||!(selectedAssignment.scales||[]).some(s=>s.scale_id===selectedScaleId)){
+    const pending=(selectedAssignment.progress&&selectedAssignment.progress.pending||[])[0];
+    selectedScaleId=pending || ((selectedAssignment.scales||[])[0]||{}).scale_id || "";
+  }
+  renderDimensionalView();
+}
 function renderRows(){
   const assignments=[];
   patientRows.innerHTML=rows.map(r=>{
@@ -61,12 +79,14 @@ function renderRows(){
     return `<tr><td>${p.subject_id}</td><td>*${r.hcl_hint||"s/d"}</td><td>${a?a.template_name:"s/d"}</td><td>${prog.done}/${prog.total}</td><td><span class="pill ${a&&a.status==="completed"?"ok":prog.done?"warn":""}">${a?a.status:"sin bateria"}</span></td><td>${a?`<button data-a="${a.id}">usar</button>`:""}</td></tr>`;
   }).join("") || "<tr><td colspan='6'>Sin pacientes.</td></tr>";
   assignmentSel.innerHTML=assignments.map(a=>`<option value="${a.id}">${a.subject_id} · ${a.template_name}</option>`).join("");
-  document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{assignmentSel.value=b.dataset.a;});
+  if(selectedAssignment)assignmentSel.value=selectedAssignment.id;
+  document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>selectAssignment(b.dataset.a));
 }
 async function loadAll(){
   msg.textContent="";
   const t=await api("/api/research/templates/");templates=t.templates;renderTemplates();
   const q=searchBox.value.trim();const p=await api("/api/research/patients/"+(q?`?q=${encodeURIComponent(q)}`:""));rows=p.patients;renderRows();
+  if(assignmentSel.value)await selectAssignment(assignmentSel.value);else renderDimensionalView();
 }
 enrollBtn.onclick=async()=>{
   msg.textContent="Creando...";
@@ -75,7 +95,7 @@ enrollBtn.onclick=async()=>{
     msg.textContent=`Creado ${data.patient.subject_id}`;
     hclCode.value="";dni.value="";
     await loadAll();
-    assignmentSel.value=data.assignment.id;
+    await selectAssignment(data.assignment.id);
   }catch(ex){msg.textContent=ex.message;}
 };
 tokenBtn.onclick=async()=>{
@@ -84,6 +104,7 @@ tokenBtn.onclick=async()=>{
   lastTokenUrl=data.url;tokenUrl.value=data.url;openTokenBtn.disabled=false;
 };
 openTokenBtn.onclick=()=>{if(lastTokenUrl)window.open(lastTokenUrl,"_blank");};
+assignmentSel.onchange=()=>selectAssignment(assignmentSel.value);
 refreshBtn.onclick=loadAll;searchBox.onkeydown=e=>{if(e.key==="Enter")loadAll();};
 staffLoginForm.onsubmit=async e=>{e.preventDefault();loginMsg.textContent="";try{await api("/api/auth/login/",{method:"POST",body:JSON.stringify({username:username.value,password:password.value})});showApp();await loadAll();}catch(ex){loginMsg.textContent=ex.message;}};
 async function boot(){await api("/api/auth/csrf/");const me=await api("/api/auth/me/");if(me.authenticated){showApp();await loadAll();}else showLogin();}
