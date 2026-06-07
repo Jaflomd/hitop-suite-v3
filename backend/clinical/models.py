@@ -1,4 +1,6 @@
 import uuid
+import secrets
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
@@ -86,6 +88,62 @@ class PatientPortalAccess(TimestampedModel):
         return f"{self.patient.subject_id}/HCL-*{self.hcl_code_hint}"
 
 
+class ConsentRecord(TimestampedModel):
+    class ConsentType(models.TextChoices):
+        RESEARCH = "research", "Research"
+        CLINICAL_SCREENING = "clinical_screening", "Clinical screening"
+        DATA_REUSE = "data_reuse", "Data reuse"
+
+    class Status(models.TextChoices):
+        ACCEPTED = "accepted", "Accepted"
+        DECLINED = "declined", "Declined"
+        PENDING = "pending", "Pending"
+
+    patient = models.ForeignKey(Patient, related_name="consents", on_delete=models.CASCADE)
+    consent_type = models.CharField(max_length=32, choices=ConsentType.choices, default=ConsentType.RESEARCH)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    recorded_at = models.DateTimeField(default=timezone.now)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.patient.subject_id}/{self.consent_type}:{self.status}"
+
+
+class BatteryTemplate(TimestampedModel):
+    name = models.CharField(max_length=120, unique=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+
+    def __str__(self):
+        return self.name
+
+
+class BatteryTemplateScale(TimestampedModel):
+    class RoleVisibleTo(models.TextChoices):
+        PATIENT = "patient", "Patient"
+        RESEARCH = "research", "Research"
+        CLINICIAN = "clinician", "Clinician"
+        ALL = "all", "All"
+
+    template = models.ForeignKey(BatteryTemplate, related_name="scales", on_delete=models.CASCADE)
+    scale_id = models.CharField(max_length=64)
+    scale_label = models.CharField(max_length=160)
+    order = models.PositiveIntegerField(default=0)
+    required = models.BooleanField(default=True)
+    role_visible_to = models.CharField(max_length=16, choices=RoleVisibleTo.choices, default=RoleVisibleTo.ALL)
+
+    class Meta:
+        ordering = ["order", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["template", "scale_id"], name="unique_template_scale"),
+        ]
+
+    def __str__(self):
+        return f"{self.template.name}/{self.scale_id}"
+
+
 class ScaleVersion(TimestampedModel):
     scale_id = models.CharField(max_length=64, db_index=True)
     version = models.CharField(max_length=64, default="local")
@@ -107,10 +165,24 @@ class AssessmentSession(TimestampedModel):
         OPEN = "open", "Open"
         CLOSED = "closed", "Closed"
 
+    class Source(models.TextChoices):
+        RESEARCH_INTAKE = "research_intake", "Research intake"
+        PATIENT_PORTAL = "patient_portal", "Patient portal"
+        CLINICIAN_DASHBOARD = "clinician_dashboard", "Clinician dashboard"
+        ADMIN = "admin", "Admin"
+
+    class AdministrationMode(models.TextChoices):
+        SELF_REPORT = "self_report", "Self report"
+        INTERVIEWER_ASSISTED = "interviewer_assisted", "Interviewer assisted"
+        CLINICIAN_ADMINISTERED = "clinician_administered", "Clinician administered"
+
     session_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     patient = models.ForeignKey(Patient, related_name="sessions", on_delete=models.CASCADE)
     clinician = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.OPEN)
+    source = models.CharField(max_length=32, choices=Source.choices, default=Source.PATIENT_PORTAL)
+    administration_mode = models.CharField(max_length=32, choices=AdministrationMode.choices, default=AdministrationMode.SELF_REPORT)
+    administered_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, related_name="administered_sessions", on_delete=models.SET_NULL)
     started_at = models.DateTimeField(default=timezone.now)
     closed_at = models.DateTimeField(null=True, blank=True)
 
@@ -125,6 +197,7 @@ class AssessmentSession(TimestampedModel):
 
 class AssessmentResult(TimestampedModel):
     session = models.ForeignKey(AssessmentSession, related_name="results", on_delete=models.CASCADE)
+    assignment = models.ForeignKey("BatteryAssignment", related_name="results", null=True, blank=True, on_delete=models.SET_NULL)
     scale_id = models.CharField(max_length=64, db_index=True)
     scale_label = models.CharField(max_length=160)
     scoring_version = models.CharField(max_length=64, default="local-js")
@@ -133,6 +206,8 @@ class AssessmentResult(TimestampedModel):
     percentile = models.IntegerField(null=True, blank=True)
     severity = models.CharField(max_length=32, blank=True)
     payload = models.JSONField(default=dict, blank=True)
+    administration_mode = models.CharField(max_length=32, choices=AssessmentSession.AdministrationMode.choices, default=AssessmentSession.AdministrationMode.SELF_REPORT)
+    administered_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, related_name="administered_results", on_delete=models.SET_NULL)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
@@ -142,6 +217,80 @@ class AssessmentResult(TimestampedModel):
 
     def __str__(self):
         return f"{self.session.patient.subject_id}/{self.scale_id}"
+
+
+class BatteryAssignment(TimestampedModel):
+    class Status(models.TextChoices):
+        ASSIGNED = "assigned", "Assigned"
+        IN_PROGRESS = "in_progress", "In progress"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    patient = models.ForeignKey(Patient, related_name="battery_assignments", on_delete=models.CASCADE)
+    session = models.ForeignKey(AssessmentSession, related_name="battery_assignments", on_delete=models.CASCADE)
+    template = models.ForeignKey(BatteryTemplate, related_name="assignments", on_delete=models.PROTECT)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.ASSIGNED)
+    assigned_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    assigned_at = models.DateTimeField(default=timezone.now)
+    due_at = models.DateTimeField(null=True, blank=True)
+    administration_mode = models.CharField(max_length=32, choices=AssessmentSession.AdministrationMode.choices, default=AssessmentSession.AdministrationMode.SELF_REPORT)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-assigned_at"]
+
+    def progress_counts(self):
+        required = list(self.template.scales.filter(required=True).values_list("scale_id", flat=True))
+        done = self.results.filter(scale_id__in=required).values("scale_id").distinct().count()
+        return done, len(required)
+
+    def refresh_status(self):
+        done, total = self.progress_counts()
+        if total and done >= total:
+            self.status = self.Status.COMPLETED
+        elif done:
+            self.status = self.Status.IN_PROGRESS
+        else:
+            self.status = self.Status.ASSIGNED
+        self.save(update_fields=["status", "updated_at"])
+
+    def __str__(self):
+        return f"{self.patient.subject_id}/{self.template.name}:{self.status}"
+
+
+class TabletAccessToken(TimestampedModel):
+    assignment = models.ForeignKey(BatteryAssignment, related_name="tablet_tokens", on_delete=models.CASCADE)
+    token_hash = models.CharField(max_length=128, unique=True, db_index=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    is_active = models.BooleanField(default=True)
+
+    @classmethod
+    def create_for_assignment(cls, assignment, created_by=None, ttl_hours=2):
+        token = secrets.token_urlsafe(32)
+        obj = cls.objects.create(
+            assignment=assignment,
+            token_hash=lookup_hash(token, "tablet-token"),
+            expires_at=timezone.now() + timedelta(hours=ttl_hours),
+            created_by=created_by,
+        )
+        return token, obj
+
+    @classmethod
+    def find_valid(cls, token):
+        return (
+            cls.objects.select_related("assignment__patient", "assignment__session", "assignment__template")
+            .filter(token_hash=lookup_hash(token, "tablet-token"), is_active=True, expires_at__gt=timezone.now())
+            .first()
+        )
+
+    def mark_used(self):
+        self.used_at = timezone.now()
+        self.save(update_fields=["used_at", "updated_at"])
+
+    def __str__(self):
+        return f"TabletToken<{self.assignment_id}>"
 
 
 class AuditLog(models.Model):

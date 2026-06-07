@@ -1,0 +1,93 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HiTOP Research</title>
+<link rel="stylesheet" href="{% static 'clinical/webapp.css' %}">
+</head>
+<body>
+<header><strong>HiTOP</strong><span>Research intake</span><a class="pill" href="/clinico/">Clinico</a><a class="pill" href="/admin/">Admin</a></header>
+<section id="loginView" class="center-card">
+  <form id="staffLoginForm" class="card">
+    {% csrf_token %}
+    <h1>Ingreso research</h1>
+    <label>Usuario<input id="username" autocomplete="username"></label>
+    <label>Clave<input id="password" type="password" autocomplete="current-password"></label>
+    <button type="submit">Entrar</button>
+    <p id="loginMsg" class="err"></p>
+  </form>
+</section>
+<main id="appView" class="hidden">
+  <div class="grid two">
+    <section class="card">
+      <h1>Nuevo paciente</h1>
+      {% csrf_token %}
+      <label>Codigo HCL/Yachay<input id="hclCode" placeholder="codigo unico"></label>
+      <label>DNI inicial<input id="dni" type="password" inputmode="numeric"></label>
+      <label>Bateria<select id="templateSel"></select></label>
+      <label>Modo<select id="modeSel"><option value="self_report">Autorreporte</option><option value="interviewer_assisted">Asistido por encuestadora</option><option value="clinician_administered">Clinico</option></select></label>
+      <label>Consentimiento<select id="consentSel"><option value="accepted">Aceptado</option><option value="pending">Pendiente</option><option value="declined">Rechazado</option></select></label>
+      <div class="actions"><button id="enrollBtn">Crear paciente + bateria</button><button class="ghost" id="refreshBtn">Actualizar</button></div>
+      <p id="msg" class="muted"></p>
+    </section>
+    <section class="card">
+      <h2>Token tablet</h2>
+      <p class="muted">Selecciona una asignacion creada y genera link temporal para tablet.</p>
+      <label>Asignacion<select id="assignmentSel"></select></label>
+      <div class="actions"><button id="tokenBtn">Generar link tablet</button><button class="ghost" id="openTokenBtn" disabled>Abrir</button></div>
+      <textarea id="tokenUrl" readonly></textarea>
+    </section>
+  </div>
+  <section class="card">
+    <h2>Pacientes research</h2>
+    <label>Buscar por HCL exacto<input id="searchBox"></label>
+    <table><thead><tr><th>Paciente</th><th>HCL</th><th>Bateria</th><th>Progreso</th><th>Estado</th><th>Accion</th></tr></thead><tbody id="patientRows"></tbody></table>
+  </section>
+</main>
+<script>
+let templates=[], rows=[], lastTokenUrl="";
+function csrfToken(){const m=document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);return m?decodeURIComponent(m[1]):document.querySelector("[name=csrfmiddlewaretoken]").value;}
+async function api(path,opts={}){const method=opts.method||"GET";const res=await fetch(path,{credentials:"same-origin",headers:{"Content-Type":"application/json",...(method==="GET"?{}:{"X-CSRFToken":csrfToken()}),...(opts.headers||{})},...opts});const data=await res.json();if(!res.ok||data.ok===false)throw new Error(data.error||"Error");return data;}
+function showApp(){loginView.classList.add("hidden");appView.classList.remove("hidden");}
+function showLogin(){loginView.classList.remove("hidden");appView.classList.add("hidden");}
+function renderTemplates(){templateSel.innerHTML=templates.map(t=>`<option value="${t.id}">${t.name} (${t.scales.length})</option>`).join("");}
+function renderRows(){
+  const assignments=[];
+  patientRows.innerHTML=rows.map(r=>{
+    if(r.assignment)assignments.push(r.assignment);
+    const p=r.patient,a=r.assignment,prog=a?a.progress:{done:0,total:0,percent:0};
+    return `<tr><td>${p.subject_id}</td><td>*${r.hcl_hint||"s/d"}</td><td>${a?a.template_name:"s/d"}</td><td>${prog.done}/${prog.total}</td><td><span class="pill ${a&&a.status==="completed"?"ok":prog.done?"warn":""}">${a?a.status:"sin bateria"}</span></td><td>${a?`<button data-a="${a.id}">usar</button>`:""}</td></tr>`;
+  }).join("") || "<tr><td colspan='6'>Sin pacientes.</td></tr>";
+  assignmentSel.innerHTML=assignments.map(a=>`<option value="${a.id}">${a.subject_id} · ${a.template_name}</option>`).join("");
+  document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{assignmentSel.value=b.dataset.a;});
+}
+async function loadAll(){
+  msg.textContent="";
+  const t=await api("/api/research/templates/");templates=t.templates;renderTemplates();
+  const q=searchBox.value.trim();const p=await api("/api/research/patients/"+(q?`?q=${encodeURIComponent(q)}`:""));rows=p.patients;renderRows();
+}
+enrollBtn.onclick=async()=>{
+  msg.textContent="Creando...";
+  try{
+    const data=await api("/api/research/enroll/",{method:"POST",body:JSON.stringify({hcl_code:hclCode.value,dni:dni.value,battery_template_id:templateSel.value,administration_mode:modeSel.value,consent_status:consentSel.value})});
+    msg.textContent=`Creado ${data.patient.subject_id}`;
+    hclCode.value="";dni.value="";
+    await loadAll();
+    assignmentSel.value=data.assignment.id;
+  }catch(ex){msg.textContent=ex.message;}
+};
+tokenBtn.onclick=async()=>{
+  if(!assignmentSel.value)return;
+  const data=await api(`/api/research/assignments/${assignmentSel.value}/tablet-token/`,{method:"POST",body:"{}"});
+  lastTokenUrl=data.url;tokenUrl.value=data.url;openTokenBtn.disabled=false;
+};
+openTokenBtn.onclick=()=>{if(lastTokenUrl)window.open(lastTokenUrl,"_blank");};
+refreshBtn.onclick=loadAll;searchBox.onkeydown=e=>{if(e.key==="Enter")loadAll();};
+staffLoginForm.onsubmit=async e=>{e.preventDefault();loginMsg.textContent="";try{await api("/api/auth/login/",{method:"POST",body:JSON.stringify({username:username.value,password:password.value})});showApp();await loadAll();}catch(ex){loginMsg.textContent=ex.message;}};
+async function boot(){await api("/api/auth/csrf/");const me=await api("/api/auth/me/");if(me.authenticated){showApp();await loadAll();}else showLogin();}
+boot().catch(()=>showLogin());
+</script>
+</body>
+</html>

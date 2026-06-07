@@ -1,7 +1,21 @@
 from django.contrib import admin
 from django import forms
 
-from .models import AssessmentResult, AssessmentSession, AuditLog, BackupRun, Patient, PatientIdentifier, PatientPortalAccess, ScaleVersion
+from .models import (
+    AssessmentResult,
+    AssessmentSession,
+    AuditLog,
+    BackupRun,
+    BatteryAssignment,
+    BatteryTemplate,
+    BatteryTemplateScale,
+    ConsentRecord,
+    Patient,
+    PatientIdentifier,
+    PatientPortalAccess,
+    ScaleVersion,
+    TabletAccessToken,
+)
 
 
 @admin.register(Patient)
@@ -65,16 +79,45 @@ class ScaleVersionAdmin(admin.ModelAdmin):
     search_fields = ("scale_id", "label")
 
 
+class BatteryTemplateScaleInline(admin.TabularInline):
+    model = BatteryTemplateScale
+    extra = 0
+    ordering = ("order",)
+
+
+@admin.register(BatteryTemplate)
+class BatteryTemplateAdmin(admin.ModelAdmin):
+    list_display = ("name", "is_active", "created_by", "created_at")
+    search_fields = ("name", "description")
+    inlines = [BatteryTemplateScaleInline]
+
+
+@admin.register(BatteryAssignment)
+class BatteryAssignmentAdmin(admin.ModelAdmin):
+    list_display = ("patient", "template", "status", "administration_mode", "assigned_by", "assigned_at", "due_at")
+    search_fields = ("patient__subject_id", "template__name")
+    list_filter = ("status", "administration_mode", "template")
+
+
+@admin.register(ConsentRecord)
+class ConsentRecordAdmin(admin.ModelAdmin):
+    list_display = ("patient", "consent_type", "status", "recorded_by", "recorded_at")
+    search_fields = ("patient__subject_id", "notes")
+    list_filter = ("consent_type", "status")
+
+
 @admin.register(AssessmentSession)
 class AssessmentSessionAdmin(admin.ModelAdmin):
-    list_display = ("session_id", "patient", "clinician", "status", "started_at", "closed_at")
+    list_display = ("session_id", "patient", "clinician", "status", "source", "administration_mode", "started_at", "closed_at")
     search_fields = ("session_id", "patient__subject_id")
+    list_filter = ("status", "source", "administration_mode")
 
 
 @admin.register(AssessmentResult)
 class AssessmentResultAdmin(admin.ModelAdmin):
-    list_display = ("session", "scale_id", "raw_value", "max_value", "percentile", "severity", "created_at")
+    list_display = ("session", "assignment", "scale_id", "raw_value", "max_value", "percentile", "severity", "administration_mode", "created_at")
     search_fields = ("scale_id", "session__patient__subject_id")
+    list_filter = ("administration_mode", "severity")
 
 
 @admin.register(AuditLog)
@@ -97,3 +140,11 @@ class AuditLogAdmin(admin.ModelAdmin):
 class BackupRunAdmin(admin.ModelAdmin):
     list_display = ("started_at", "finished_at", "status", "destination_path", "checksum_sha256")
     search_fields = ("destination_path", "checksum_sha256")
+
+
+@admin.register(TabletAccessToken)
+class TabletAccessTokenAdmin(admin.ModelAdmin):
+    list_display = ("assignment", "expires_at", "used_at", "is_active", "created_by", "created_at")
+    search_fields = ("assignment__patient__subject_id", "assignment__template__name")
+    list_filter = ("is_active",)
+    readonly_fields = ("token_hash", "created_at", "updated_at")

@@ -17,6 +17,7 @@ docker compose up --build
 
 ```bash
 docker compose exec web python manage.py migrate
+docker compose exec web python manage.py seed_local_setup
 docker compose exec web python manage.py createsuperuser
 ```
 
@@ -25,13 +26,19 @@ API local:
 - `GET http://127.0.0.1:8000/api/health/`
 - `POST http://127.0.0.1:8000/api/auth/login/`
 - `POST http://127.0.0.1:8000/api/patient/auth/login/`
+- `POST http://127.0.0.1:8000/api/patient/auth/token-login/`
+- `GET http://127.0.0.1:8000/api/patient/assignments/`
 - `GET http://127.0.0.1:8000/api/patient/sessions/`
+- `POST http://127.0.0.1:8000/api/research/enroll/`
+- `GET http://127.0.0.1:8000/api/clinician/patients/`
 - `GET http://127.0.0.1:8000/api/patients/`
 - `GET http://127.0.0.1:8000/api/export/csv/`
 
 Portal paciente:
 
 - `GET http://127.0.0.1:8000/paciente/`
+- `GET http://127.0.0.1:8000/research/`
+- `GET http://127.0.0.1:8000/clinico/`
 - Credencial inicial: codigo HCL/Yachay + DNI.
 - El codigo HCL se guarda como hash HMAC para busqueda.
 - El DNI se guarda como hash de password Django, nunca plano.
@@ -64,6 +71,10 @@ python -m venv /tmp/hitop_backend_venv
 - `Patient`: pseudonimo (`SUBJ-001`), sin identificadores.
 - `PatientIdentifier`: payload opcional cifrado, separado de `Patient`.
 - `PatientPortalAccess`: HCL hasheado + DNI hasheado para login paciente local.
+- `ConsentRecord`: consentimiento/estado de uso.
+- `BatteryTemplate` y `BatteryTemplateScale`: baterias reutilizables.
+- `BatteryAssignment`: bateria asignada a paciente/sesion.
+- `TabletAccessToken`: link temporal para tablet.
 - `AssessmentSession`: sesion por paciente.
 - `AssessmentResult`: resultado por escala/version.
 - `AuditLog`: append-only para acciones criticas.

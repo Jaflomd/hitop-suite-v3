@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HiTOP Clinico</title>
+<link rel="stylesheet" href="{% static 'clinical/webapp.css' %}">
+</head>
+<body>
+<header><strong>HiTOP</strong><span>Clinico</span><a class="pill" href="/research/">Research</a><a class="pill" href="/admin/">Admin</a></header>
+<section id="loginView" class="center-card">
+  <form id="staffLoginForm" class="card">
+    {% csrf_token %}
+    <h1>Ingreso clinico</h1>
+    <label>Usuario<input id="username" autocomplete="username"></label>
+    <label>Clave<input id="password" type="password" autocomplete="current-password"></label>
+    <button type="submit">Entrar</button>
+    <p id="loginMsg" class="err"></p>
+  </form>
+</section>
+<main id="appView" class="hidden">
+  <div class="grid two">
+    <section class="card">
+      <h1>Pacientes</h1>
+      {% csrf_token %}
+      <label>Buscar<input id="searchBox" placeholder="SUBJ-001"></label>
+      <div class="actions"><button id="refreshBtn">Actualizar</button><a class="pill" href="/api/clinician/export/csv/">Export CSV</a></div>
+      <div id="patientList" class="list"></div>
+    </section>
+    <section class="card">
+      <h1 id="profileTitle">Perfil</h1>
+      <p id="profileMeta" class="muted">Selecciona un paciente.</p>
+      <div id="assignmentList"></div>
+    </section>
+  </div>
+  <section class="card">
+    <h2>Resultados longitudinales</h2>
+    <table><thead><tr><th>Escala</th><th>Valor</th><th>Severidad</th><th>Modo</th><th>Fecha</th></tr></thead><tbody id="resultRows"></tbody></table>
+  </section>
+</main>
+<script>
+let patients=[], selected=null;
+function csrfToken(){const m=document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);return m?decodeURIComponent(m[1]):document.querySelector("[name=csrfmiddlewaretoken]").value;}
+async function api(path,opts={}){const method=opts.method||"GET";const res=await fetch(path,{credentials:"same-origin",headers:{"Content-Type":"application/json",...(method==="GET"?{}:{"X-CSRFToken":csrfToken()}),...(opts.headers||{})},...opts});const data=await res.json();if(!res.ok||data.ok===false)throw new Error(data.error||"Error");return data;}
+function showApp(){loginView.classList.add("hidden");appView.classList.remove("hidden");}
+function showLogin(){loginView.classList.remove("hidden");appView.classList.add("hidden");}
+function renderPatients(){
+  patientList.innerHTML=patients.map(r=>{
+    const p=r.patient,a=r.latest_assignment,prog=a?a.progress:{done:0,total:0,percent:0};
+    return `<button class="ghost row" data-p="${p.id}"><strong>${p.subject_id}</strong><span>${a?a.template_name:"sin bateria"} · ${prog.done}/${prog.total}</span></button>`;
+  }).join("")||"<p class='muted'>Sin pacientes.</p>";
+  document.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>loadProfile(b.dataset.p));
+}
+async function loadPatients(){
+  const q=searchBox.value.trim();
+  const data=await api("/api/clinician/patients/"+(q?`?q=${encodeURIComponent(q)}`:""));
+  patients=data.patients;renderPatients();
+}
+async function loadProfile(id){
+  const data=await api(`/api/clinician/patients/${id}/profile/`);
+  selected=data;
+  profileTitle.textContent=data.patient.subject_id;
+  profileMeta.textContent=`${data.assignments.length} baterias · ${data.results.length} resultados`;
+  assignmentList.innerHTML=data.assignments.map(a=>`<div class="row"><strong>${a.template_name}</strong><span>${a.progress.done}/${a.progress.total} · ${a.status}</span></div>`).join("")||"<p class='muted'>Sin baterias.</p>";
+  resultRows.innerHTML=data.results.map(r=>`<tr><td>${r.scale_label}</td><td>${r.raw_value}/${r.max_value} · ${r.percentile}/100</td><td>${r.severity}</td><td>${r.administration_mode}</td><td>${r.created_at.slice(0,10)}</td></tr>`).join("")||"<tr><td colspan='5'>Sin resultados.</td></tr>";
+}
+refreshBtn.onclick=loadPatients;searchBox.onkeydown=e=>{if(e.key==="Enter")loadPatients();};
+staffLoginForm.onsubmit=async e=>{e.preventDefault();loginMsg.textContent="";try{await api("/api/auth/login/",{method:"POST",body:JSON.stringify({username:username.value,password:password.value})});showApp();await loadPatients();}catch(ex){loginMsg.textContent=ex.message;}};
+async function boot(){await api("/api/auth/csrf/");const me=await api("/api/auth/me/");if(me.authenticated){showApp();await loadPatients();}else showLogin();}
+boot().catch(()=>showLogin());
+</script>
+</body>
+</html>

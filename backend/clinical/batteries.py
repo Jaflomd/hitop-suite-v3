@@ -1,0 +1,68 @@
+DEFAULT_GROUPS = ["admin", "clinician", "research_assistant", "auditor"]
+
+SCALE_LABELS = {
+    "BHITOP": "B-HiTOP",
+    "ASRS-18": "ASRS-18",
+    "AQ-10": "AQ-10",
+    "DERS-16": "DERS-16",
+    "AAQ-II": "AAQ-II",
+    "S-UPPS-P": "S-UPPS-P",
+    "PTQ-15": "PTQ-15",
+    "DJG-6": "DJG-6",
+    "WHODAS-12": "WHODAS-12",
+    "SWLS": "SWLS",
+    "ACEs": "ACEs",
+    "EQ-5D-5L": "EQ-5D-5L",
+    "EFECO-21": "EFECO-21",
+    "PHQ-9": "PHQ-9",
+    "GAD-7": "GAD-7",
+    "PCL-5": "PCL-5",
+    "AUDIT": "AUDIT",
+}
+
+DEFAULT_BATTERIES = {
+    "Research Intake Breve": {
+        "description": "Bateria breve para intake research en tablet.",
+        "scales": ["ASRS-18", "AQ-10", "WHODAS-12", "SWLS", "ACEs", "EQ-5D-5L"],
+    },
+    "HiTOP Core": {
+        "description": "Bateria dimensional principal HiTOP + procesos transdiagnosticos.",
+        "scales": [
+            "BHITOP",
+            "ASRS-18",
+            "AQ-10",
+            "DERS-16",
+            "AAQ-II",
+            "S-UPPS-P",
+            "PTQ-15",
+            "DJG-6",
+            "WHODAS-12",
+            "SWLS",
+            "ACEs",
+            "EQ-5D-5L",
+            "EFECO-21",
+        ],
+    },
+    "Clinico Completo": {
+        "description": "Bateria clinica extendida inicial.",
+        "scales": [
+            "BHITOP",
+            "ASRS-18",
+            "AQ-10",
+            "DERS-16",
+            "AAQ-II",
+            "S-UPPS-P",
+            "PTQ-15",
+            "DJG-6",
+            "WHODAS-12",
+            "SWLS",
+            "ACEs",
+            "EQ-5D-5L",
+            "EFECO-21",
+            "PHQ-9",
+            "GAD-7",
+            "PCL-5",
+            "AUDIT",
+        ],
+    },
+}

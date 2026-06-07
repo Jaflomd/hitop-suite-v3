@@ -23,6 +23,8 @@ Beta interna autocontenida para exploracion dimensional HiTOP + neurodesarrollo.
 - Auth: sesiones server-side de Django.
 - Datos: `Patient`, `PatientPortalAccess`, `AssessmentSession`, `AssessmentResult`, `AuditLog`, `BackupRun`.
 - Portal paciente: `http://127.0.0.1:8000/paciente/`.
+- Research intake: `http://127.0.0.1:8000/research/`.
+- Dashboard clinico: `http://127.0.0.1:8000/clinico/`.
 - Acceso paciente: codigo HCL/Yachay + DNI inicial; se guardan hashes, no DNI plano.
 - Backups: `backend/scripts/backup_local.sh`, cifrado con OpenSSL y excluido de Git.
 
@@ -32,6 +34,7 @@ Arranque:
 cp .env.example .env
 docker compose up --build
 docker compose exec web python manage.py migrate
+docker compose exec web python manage.py seed_local_setup
 docker compose exec web python manage.py createsuperuser
 ```
 
@@ -40,6 +43,7 @@ docker compose exec web python manage.py createsuperuser
 ```bash
 npm test
 npm run check:syntax
+npm run check:webapp
 python backend/manage.py check
 python backend/manage.py test clinical
 ```

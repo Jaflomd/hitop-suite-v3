@@ -31,7 +31,11 @@ Extension actual: agregar portal paciente local para ingreso con codigo HCL/Yach
 - Identificadores opcionales separados y cifrados.
 - Acceso paciente separado (`PatientPortalAccess`) con HCL hasheado para lookup y DNI hasheado como password.
 - Portal paciente en `/paciente/`.
-- API paciente: login/logout/me, sesiones propias y resultados propios.
+- Research intake en `/research/`.
+- Dashboard clinico en `/clinico/`.
+- API paciente: login/logout/me, assignments propias, token tablet, sesiones propias y resultados propios.
+- API research: enrolamiento, plantillas, progreso y token tablet.
+- API clinico: lista, perfil, sesiones, resultados y export pseudonimizado.
 - Evaluaciones separadas por sesion.
 - Export CSV desde backend sin identificadores.
 - Audit log de login, creacion de paciente/sesion/resultado, cierre de sesion y export.
