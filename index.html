@@ -66,7 +66,7 @@
   .item-progress-track i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--sv-low),var(--accent))}
   .item-progress-meta{display:flex;justify-content:space-between;gap:10px;margin-top:6px;color:var(--soft);font-size:11px;font-variant-numeric:tabular-nums}
   .muted{color:var(--soft);font-size:13px}
-  .demo-banner{font-size:12px;color:var(--faint);margin:0 18px}
+  .app-note{font-size:12px;color:var(--faint);margin:0 18px}
   @media(max-width:720px){.map-head{grid-template-columns:1fr}.item-progress{min-width:0}}
 
   .rowlabels{display:grid;grid-template-columns:repeat(3,1fr);font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
@@ -170,7 +170,7 @@
 
 <div id="gate">
   <div class="gate-card">
-    <h1>HiTOP</h1><p>Prototipo · acceso restringido</p>
+    <h1>HiTOP</h1><p>Beta interna · acceso local</p>
     <input id="gateInput" type="password" inputmode="numeric" placeholder="Clave" />
     <button id="gateBtn">Entrar</button>
     <div class="gate-err" id="gateErr"></div>
@@ -179,7 +179,7 @@
 
 <div id="appShell" class="hidden">
   <header>
-    <span class="brand">HiTOP</span><span class="tag">PROTOTIPO</span>
+    <span class="brand">HiTOP</span><span class="tag">BETA INTERNA</span>
     <select id="patientSel"></select>
     <div class="spacer"></div>
     <div class="seg" id="themeSeg">
@@ -189,7 +189,7 @@
     </div>
     <button class="act" id="csvBtn">Exportar CSV</button>
   </header>
-  <p class="demo-banner">B-HiTOP (45 items) como base + Neurodevelopmental via ASRS-18 y AQ-10. Clic en una dimension del mapa: a la derecha puedes <b>hacer la escala</b>; al terminar se puntua el factor P y las dimensiones.</p>
+  <p class="app-note">B-HiTOP (45 items) como base + Neurodevelopmental via ASRS-18 y AQ-10. Solo se muestran puntajes cuando una escala fue completada.</p>
 
   <div class="wrap">
     <div class="card">
@@ -653,16 +653,13 @@ const HIDDEN_FIGURE_SYMPTOMS=new Set([
 function figureSymptomsForSub(sub){
   return SYMPTOMS.filter(s=>s.sub===sub && !HIDDEN_FIGURE_SYMPTOMS.has(s.name));
 }
+function noScore(extra){
+  return {pct:0,has:false,level:null,...(extra||{})};
+}
 function symScore(s){
   if(s.idas){const d=(patient().idas||{})[s.idas]; if(d&&d.has) return {pct:d.pct,has:true,level:d.level,raw:d.raw,max:d.max,real:true};}
   const rs=realScore(s.src,s.name); if(rs) return rs;
-  return simFromSpectrum(s.name,s.spectrum);
-}
-function simFromSpectrum(name,spectrum){
-  const sp=score(spectrum); if(!sp.has) return {pct:0,has:false,level:null};
-  let h=0; for(const c of name) h=(h*37+c.charCodeAt(0))%103;
-  const pct=Math.max(3,Math.min(99, Math.round(sp.pct + (h-51)/2.2)));
-  return {pct,has:true,level:pctLevel(pct)};
+  return noScore({real:false});
 }
 
 /* Jerarquia HiTOP: espectro -> subfactores (hojas). Rasgos PID-5 y Sintomas cuelgan de la hoja. */
@@ -683,7 +680,7 @@ const DISORDERS={
  somatoform:["Trast. de sintomas somaticos","Ansiedad por enfermedad"],
  fear:["Agorafobia","TOC","Trast. de panico","Fobia social","Fobia especifica"],
 };
-/* Escalas de nivel TRASTORNO (clicables, con barra). Por ahora simuladas. */
+/* Escalas de nivel TRASTORNO (clicables, con barra). */
 const DX_SCALES=[
  {name:"TDM",sub:"distress",spectrum:"internalizing",src:"PHQ-9"},
  {name:"TAG",sub:"distress",spectrum:"internalizing",src:"GAD-7"},
@@ -1155,7 +1152,7 @@ function realScore(src,subName){
   } return null; }
   return {pct:d.pct,has:true,level:d.level||pctLevel(d.pct),raw:d.raw,max:d.max,label:d.label,real:true};
 }
-function dxScore(d){ return realScore(d.src) || simFromSpectrum(d.name,d.spectrum); }
+function dxScore(d){ return realScore(d.src) || noScore({real:false}); }
 const SPECTRA_KEYS=new Set(["somatoform","internalizing","thought","detachment","neuro","disinhibited","antagonistic"]);
 const LEAVES=[]; TREE.forEach(g=>g.leaves.forEach(lf=>LEAVES.push({k:lf.k,sp:g.sp,label:lf.label,direct:lf.k===g.sp})));
 function facetSub(f){ return f.spectrum==="internalizing"?"distress":f.spectrum; }
@@ -1167,10 +1164,10 @@ function leafScore(k,sp){
     if(!pcts.length) return {pct:0,has:false,level:null};
     const pct=Math.max(...pcts); return {pct,has:true,level:pctLevel(pct)};
   }
-  if(k==="distress"){const d=patient().k10; if(d) return {pct:d.pct,has:true,level:d.level}; return simFromSpectrum(k,sp);} // Kessler-10 = agregado de Distress
-  if(k==="eating"){const d=(patient().scales||{})["SCOFF"]; if(d) return {pct:d.pct,has:true,level:d.level}; return simFromSpectrum(k,sp);}
-  if(k==="sexual"){const d=(patient().scales||{})["MGH-SFQ"]; if(d) return {pct:d.pct,has:true,level:d.level}; return simFromSpectrum(k,sp);}
-  return simFromSpectrum(k,sp);                        // subfactor derivado (placeholder)
+  if(k==="distress"){const d=patient().k10; if(d) return {pct:d.pct,has:true,level:d.level}; return noScore();}
+  if(k==="eating"){const d=(patient().scales||{})["SCOFF"]; if(d) return {pct:d.pct,has:true,level:d.level}; return noScore();}
+  if(k==="sexual"){const d=(patient().scales||{})["MGH-SFQ"]; if(d) return {pct:d.pct,has:true,level:d.level}; return noScore();}
+  return noScore();
 }
 function hasIDASSub(sub){
   const idas=patient().idas||{};
@@ -1517,14 +1514,7 @@ function computeEFECO21(v){
 
 /* ===================== Pacientes ===================== */
 const PATIENTS=[
- {code:"PT-014 (JM · 1990)",
-  bhitop:{pfactor:{mean:2.4,pct:88},internalizing:{mean:3.4,pct:95},somatoform:{mean:2.1,pct:60},detachment:{mean:2.9,pct:70},thought:{mean:1.1,pct:28},disinhibited:{mean:1.65,pct:50},antagonistic:{mean:1.35,pct:38},external:{mean:1.5,pct:46}},
-  neuro:{asrs6:{count:5,positive:true,pct:83},aq10:{count:7,positive:true,pct:70}},
-  context:{swls:{total:18,max:35,pct:51,level:"mid",label:"Levemente insatisfecho"},wsas:{total:38,max:60,pct:54,level:"mid",label:"Discapacidad moderada"}}},
- {code:"PT-021 (RC · 1985)",
-  bhitop:{pfactor:{mean:2.1,pct:74},internalizing:{mean:1.85,pct:48},somatoform:{mean:1.7,pct:42},detachment:{mean:2.0,pct:40},thought:{mean:1.05,pct:20},disinhibited:{mean:2.5,pct:90},antagonistic:{mean:1.9,pct:82},external:{mean:2.2,pct:91}},
-  neuro:{}},
- {code:"PT-NEW (sin evaluar)", bhitop:{}, neuro:{}},
+ {code:"Paciente nuevo", bhitop:{}, neuro:{}, context:{}, scales:{}, idas:{}, pid5:null},
 ];
 let pIndex=0, selected=null, administering=null;
 const patient=()=>PATIENTS[pIndex];
@@ -1540,16 +1530,10 @@ function score(key){
   return d?{mean:d.mean,pct:d.pct,has:true,level:pctLevel(d.pct)}:{mean:null,pct:0,has:false,level:null};
 }
 
-/* Simulacion de faceta PID-5: deriva del puntaje del espectro del paciente
-   con una variacion fija por faceta (placeholder hasta administrar el PID-5 real). */
 function facetScore(f){
   const p=patient();
   if(p.pid5&&p.pid5[f.name]){const d=p.pid5[f.name];return {mean:d.mean,pct:d.pct,has:true,level:d.level,raw:d.raw,max:d.max,label:d.label,real:true};}
-  const sp=score(f.spectrum);
-  if(!sp.has) return {pct:0,has:false,level:null,real:false};
-  let h=0; for(const c of f.name) h=(h*31+c.charCodeAt(0))%101;
-  const pct=Math.max(3,Math.min(99, Math.round(sp.pct + (h-50)/2.2)));
-  return {pct,has:true,level:pctLevel(pct),real:false};
+  return noScore({real:false});
 }
 
 /* ===================== Mapa ===================== */
@@ -1707,7 +1691,7 @@ function renderPanel(){
   if(selected&&selected.indexOf("facet:")===0){
     const f=PID5_FACETS.find(x=>x.name===selected.slice(6)), fs=facetScore(f);
     el.innerHTML=`<div class="pheader"><span class="pc">${f.name}</span><span class="val">${fs.has?fs.pct+"/100":"sin evaluar"}</span></div>
-      <div class="kind">Faceta PID-5 · ${LABELS[f.spectrum]}${fs.has?(fs.real?" · medido":" · simulado"):""}</div>
+      <div class="kind">Faceta PID-5 · ${LABELS[f.spectrum]}${fs.real?" · medido":""}</div>
       <div class="bar" style="margin-top:8px"><i class="${levelClass(fs.level,fs.has)}" style="width:${fs.has?fs.pct:0}%"></i></div>
       <p class="muted" style="margin-top:12px">${f.summary}</p>
       <button class="do-btn wide" style="margin-top:14px" data-do="pid5facet:${encodeURIComponent(f.name)}">${fs.real?"Repetir":"Hacer"} solo ${f.name} (${f.items.length} items)</button>
@@ -1745,7 +1729,7 @@ function renderPanel(){
   if(selected&&selected.indexOf("dx:")===0){
     const d=DX_SCALES.find(x=>x.name===selected.slice(3)), ss=dxScore(d), real=!!realScore(d.src);
     el.innerHTML=`<div class="pheader"><span class="pc">${d.name}</span><span class="val">${ss.has?(ss.raw!=null?ss.raw+"/"+ss.max:ss.pct+"/100"):"sin evaluar"}</span></div>
-      <div class="kind">Trastorno · instrumento: ${d.src}${real?" · medido":" · simulado"}</div>
+      <div class="kind">Trastorno · instrumento: ${d.src}${real?" · medido":""}</div>
       <div class="bar" style="margin-top:8px"><i class="${levelClass(ss.level,ss.has)}" style="width:${ss.has?ss.pct:0}%"></i></div>
       ${SCALES[d.src]?`<button class="do-btn wide" style="margin-top:14px" data-do="${d.src}">${real?"Repetir":"Hacer"} ${d.src}</button>${dxDetailHTML(d.src)}`:`<p class="muted" style="margin-top:12px">Escala (${d.src}) pendiente de cablear.</p>`}`;
     bindDo(el); return;
@@ -1753,7 +1737,7 @@ function renderPanel(){
   if(selected&&selected.indexOf("sym:")===0){
     const s=SYMPTOMS.find(x=>x.name===selected.slice(4)), ss=symScore(s);
     el.innerHTML=`<div class="pheader"><span class="pc">${s.name}</span><span class="val">${ss.has?ss.pct+"/100":"sin evaluar"}</span></div>
-      <div class="kind">Sintoma · ${s.src} · ${LABELS[s.spectrum]}${ss.has?(ss.real?" · medido":" · simulado"):""}</div>
+      <div class="kind">Sintoma · ${s.src} · ${LABELS[s.spectrum]}${ss.real?" · medido":""}</div>
       <div class="bar" style="margin-top:8px"><i class="${levelClass(ss.level,ss.has)}" style="width:${ss.has?ss.pct:0}%"></i></div>
       ${symActionHTML(s,true)||`<p class="muted" style="margin-top:12px">Dimension de sintomas (${s.src}). Sin cuestionario anexado todavia.</p>`}
       ${symDetailHTML(s)}`;

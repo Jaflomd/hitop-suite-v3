@@ -1,21 +1,23 @@
 # HiTOP Suite v3
 
-Prototipo local autocontenido para exploracion dimensional HiTOP + neurodesarrollo.
+Beta interna autocontenida para exploracion dimensional HiTOP + neurodesarrollo.
 
 ## App
 
-- `index.html`: copia exacta de `/Users/jaflomd/Downloads/hitop-prototype.html`.
+- `index.html`: app local en HTML unico.
 - No requiere assets externos: CSS, datos, items y logica estan embebidos en el HTML.
 - Abrir directamente en navegador o servir la carpeta con un servidor local simple.
 
 ## Estado
 
 - Ubicacion de trabajo: `2-wip/HiTOP Suite v3/`.
-- Origen copiado: `/Users/jaflomd/Downloads/hitop-prototype.html`.
-- Fecha de traslado: 2026-06-07.
+- Pacientes demo eliminados.
+- Puntajes derivados/simulados eliminados: si no hay escala completada, el dominio queda `s/d`.
+- Fecha de traslado inicial: 2026-06-07.
 
 ## Notas de riesgo
 
-- Prototipo, no herramienta clinica validada.
+- Beta interna, no herramienta clinica validada.
 - La clave de acceso esta en cliente y no constituye seguridad real.
-- Mantener separado lo medido, simulado y pendiente antes de usar con casos reales.
+- No usar con datos identificables de pacientes hasta implementar backend seguro, control de acceso, auditoria, consentimiento y gobierno de datos.
+- Ver `PRODUCTION_READINESS.md` antes de cualquier uso clinico real.
