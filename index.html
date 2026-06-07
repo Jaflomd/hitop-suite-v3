@@ -1910,29 +1910,33 @@ function finishAdmin(){
 }
 
 /* ===================== CSV ===================== */
+function exportSubjectId(p,idx){
+  return p.subjectId || `SUBJ-${String(idx+1).padStart(3,"0")}`;
+}
 function exportCSV(){
-  const rows=[["patient_code","fecha","dominio","escala","valor","percentil"]];
+  const rows=[["subject_id","fecha","dominio","escala","valor","percentil"]];
   const today=new Date().toISOString().slice(0,10);
-	  PATIENTS.forEach(p=>{
-	    BHITOP_SCALES.forEach(s=>{const d=p.bhitop&&p.bhitop[s.key];if(d)rows.push([p.code,today,s.label,"B-HiTOP",d.mean,d.pct]);});
+	  PATIENTS.forEach((p,idx)=>{
+      const subjectId=exportSubjectId(p,idx);
+	    BHITOP_SCALES.forEach(s=>{const d=p.bhitop&&p.bhitop[s.key];if(d)rows.push([subjectId,today,s.label,"B-HiTOP",d.mean,d.pct]);});
 	    const n=p.neuro||{};
 	    const neuroLabels={asrs6:"ASRS-6",aq10:"AQ-10",...Object.fromEntries(Object.entries(NEURO_INSTR).map(([id,d])=>[id,d.label]))};
 	    Object.entries(n).forEach(([id,d])=>{
 	      const label=neuroLabels[id]||id;
 	      const denom=id==="aq10"?10:id==="asrs6"?6:null;
 	      const val=d.count!=null&&denom?`${d.count}/${denom}`:(d.raw!=null?`${d.raw}/${d.max}`:(d.pct!=null?`${d.pct}/100`:""));
-	      rows.push([p.code,today,"Neurodevelopmental",label,val,d.pct!=null?d.pct:""]);
+	      rows.push([subjectId,today,"Neurodevelopmental",label,val,d.pct!=null?d.pct:""]);
 	    });
 	    const c=p.context||{};
     TRANSDIAGNOSTIC_SCALES.forEach(([id,label])=>{
       const d=c[id]; if(!d)return;
-      rows.push([p.code,today,"Transdiagnostico",label,d.profile||d.total+"/"+d.max,d.pct]);
+      rows.push([subjectId,today,"Transdiagnostico",label,d.profile||d.total+"/"+d.max,d.pct]);
     });
-    Object.entries(p.pid5||{}).forEach(([name,d])=>rows.push([p.code,today,"Rasgo PID-5",name,d.mean!=null?d.mean:d.raw+"/"+d.max,d.pct]));
-    Object.entries(p.idas||{}).forEach(([id,d])=>{const sc=IDAS_SCALES.find(x=>x.id===id);rows.push([p.code,today,"Sintoma IDAS-II",sc?sc.name:id,d.raw+"/"+d.max,d.pct]);});
+    Object.entries(p.pid5||{}).forEach(([name,d])=>rows.push([subjectId,today,"Rasgo PID-5",name,d.mean!=null?d.mean:d.raw+"/"+d.max,d.pct]));
+    Object.entries(p.idas||{}).forEach(([id,d])=>{const sc=IDAS_SCALES.find(x=>x.id===id);rows.push([subjectId,today,"Sintoma IDAS-II",sc?sc.name:id,d.raw+"/"+d.max,d.pct]);});
     Object.entries(p.scales||{}).forEach(([src,d])=>{
-      if(d.details)Object.entries(d.details).forEach(([name,x])=>rows.push([p.code,today,src,name,x.raw+"/"+x.max,x.pct]));
-      else if(d.raw!=null)rows.push([p.code,today,src,src,d.raw+"/"+d.max,d.pct]);
+      if(d.details)Object.entries(d.details).forEach(([name,x])=>rows.push([subjectId,today,src,name,x.raw+"/"+x.max,x.pct]));
+      else if(d.raw!=null)rows.push([subjectId,today,src,src,d.raw+"/"+d.max,d.pct]);
     });
   });
   const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");

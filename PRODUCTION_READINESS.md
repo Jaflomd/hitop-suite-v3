@@ -62,10 +62,17 @@ La app no esta lista para uso clinico con datos identificables. Si se usa hoy, d
 ## Ruta Recomendada
 
 ### Sprint 1 - Beta clinica sin PHI
-- Mantener app local/pseudonimizada.
-- Agregar tests automaticos de scoring.
-- Crear checklist de revision clinica por escala.
-- Export CSV sin datos identificables.
+- [x] Mantener app local/pseudonimizada.
+- [x] Agregar tests automaticos de scoring.
+- [x] Crear checklist de revision clinica por escala.
+- [x] Export CSV sin datos identificables.
+
+Artefactos Sprint 1:
+
+- `index.html`: un solo paciente local no identificable y export CSV con `subject_id`.
+- `tests/scoring.test.js`: tests automaticos de scoring.
+- `CLINICAL_REVIEW_CHECKLIST.md`: checklist clinico por escala.
+- `package.json`: comandos `npm test` y `npm run check:syntax`.
 
 ### Sprint 2 - Backend seguro
 - Autenticacion server-side.

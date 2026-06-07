@@ -8,6 +8,20 @@ Beta interna autocontenida para exploracion dimensional HiTOP + neurodesarrollo.
 - No requiere assets externos: CSS, datos, items y logica estan embebidos en el HTML.
 - Abrir directamente en navegador o servir la carpeta con un servidor local simple.
 
+## Sprint 1
+
+- App local/pseudonimizada: un solo `Paciente nuevo`, sin datos demo.
+- Export CSV usa `subject_id` generado (`SUBJ-001`) y no exporta nombres, iniciales ni fechas de nacimiento.
+- Checklist clinico por escala: `CLINICAL_REVIEW_CHECKLIST.md`.
+- Tests automaticos de scoring: `npm test`.
+
+## Verificacion
+
+```bash
+npm test
+npm run check:syntax
+```
+
 ## Estado
 
 - Ubicacion de trabajo: `2-wip/HiTOP Suite v3/`.

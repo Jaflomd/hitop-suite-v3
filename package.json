@@ -1,0 +1,10 @@
+{
+  "name": "hitop-suite-v3",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Beta interna local para exploracion dimensional HiTOP + neurodesarrollo.",
+  "scripts": {
+    "test": "node --test tests/scoring.test.js",
+    "check:syntax": "perl -0777 -ne 'print $1 if /<script>(.*)<\\/script>/s' index.html > /tmp/hitop-inline-check.js && node --check /tmp/hitop-inline-check.js"
+  }
+}
