@@ -2,6 +2,21 @@
   var TRANSDIAGNOSTIC = new Set(["DERS-16","AAQ-II","S-UPPS-P","PTQ-15","DJG-6","WHODAS-12","SWLS","ACEs","EQ-5D-5L","EFECO-21"]);
   var NEURODEV = new Set(["ASRS-18","AQ-10"]);
 
+  // Severity glyph map (colorblind-safe)
+  var SEVERITY_GLYPH = {high:"▲", mid:"◆", low:"●", empty:""};
+  var SEVERITY_CLASS = {high:"sev-high", mid:"sev-mid", low:"sev-low", empty:"sev-empty"};
+
+  // Spectrum → scale ID mapping (matches mapHtml aggregateNode calls)
+  var SPECTRUM_SCALES = {
+    "Somatoform":       ["PHQ-15"],
+    "Internalizing":    ["GAD-7","PHQ-9","PCL-5","SWLS"],
+    "Thought Disorder": ["CAPE-POS","CAPE-NEG"],
+    "Detachment":       ["AQ-10"],
+    "Disinhibited":     ["S-UPPS-P","ASRS-18","AUDIT","DUDIT"],
+    "Antagonistic":     ["PID5-ANT"]
+  };
+  var SPECTRUM_ORDER = ["Somatoform","Internalizing","Thought Disorder","Detachment","Disinhibited","Antagonistic"];
+
   function esc(value){
     return String(value == null ? "" : value).replace(/[&<>"']/g, function(ch){
       return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch];
@@ -72,6 +87,10 @@
     return "low";
   }
 
+  function glyphFor(level){
+    return SEVERITY_GLYPH[level] || "";
+  }
+
   function statusLabel(result, assigned){
     if(result) return result.raw_value + "/" + result.max_value;
     return assigned ? "s/d" : "";
@@ -121,8 +140,12 @@
     var cls = ["map-node", "status-" + (opts.state || "empty"), "level-" + (opts.level || "empty")];
     if(opts.selected) cls.push("selected");
     var scaleAttr = opts.scaleId ? ' data-scale="' + esc(opts.scaleId) + '"' : "";
+    var level = opts.level || "empty";
+    var glyph = opts.state === "done" ? glyphFor(level) : "";
+    var glyphHtml = glyph ? '<span class="node-glyph ' + SEVERITY_CLASS[level] + '" aria-label="' + esc(level) + '">' + glyph + '</span>' : '';
     return '<button class="' + cls.join(" ") + '"' + scaleAttr + ' type="button">' +
-      '<span class="node-top"><span><i class="node-dot"></i>' + esc(opts.label) + '</span><strong>' + esc(opts.value || "") + '</strong></span>' +
+      '<span class="node-top"><span><i class="node-dot"></i>' + esc(opts.label) + '</span>' +
+      '<span class="node-top-right">' + glyphHtml + '<strong>' + esc(opts.value || "") + '</strong></span></span>' +
       (opts.sublabel ? '<span class="node-sub">' + esc(opts.sublabel) + '</span>' : '') +
       '<span class="node-track"><i style="width:' + Math.max(0, Math.min(100, opts.pct || 0)) + '%"></i></span>' +
       '</button>';
@@ -295,7 +318,12 @@
       '<div class="map-head"><div><h2>MAPA HITOP</h2><p>Color por percentil. Bateria actual: <strong>' + esc(title) + '</strong>.</p></div>' +
       '<div class="battery-progress"><div><span>PROGRESO DE BATERIA</span><strong>' + esc(progress) + '</strong></div><div class="progress"><i style="width:' + ctx.stats.percent + '%"></i></div><p>' + ctx.stats.doneScales + '/' + ctx.stats.totalScales + ' escalas · ' + (ctx.stats.totalItems - ctx.stats.doneItems) + ' items pendientes</p></div></div>' +
       '<div class="map-grid">' + mapHtml(ctx) + '</div>' +
-      '<div class="map-legend"><span><i></i> sin evaluar</span><span><i></i> baja</span><span><i></i> media</span><span><i></i> alta</span></div>' +
+      '<div class="map-legend">' +
+      '<span><i></i> sin evaluar</span>' +
+      '<span class="sev-low"><i></i><span class="legend-glyph">●</span> baja</span>' +
+      '<span class="sev-mid"><i></i><span class="legend-glyph">◆</span> media</span>' +
+      '<span class="sev-high"><i></i><span class="legend-glyph">▲</span> alta</span>' +
+      '</div>' +
       '</section>' +
       panelHtml(ctx) +
       '</div>';
@@ -312,4 +340,151 @@
   }
 
   window.HITOP_RENDER_DIMENSIONAL_MAP = render;
+
+  // ─── Spectrum percentile computation ──────────────────────────────────────
+  // For each spectrum, take the max percentile among its associated scales
+  // that have a result. Returns an array of {name, pct, level, hasData}.
+  function computeSpectraPercentiles(results){
+    var byScale = latestResults(results);
+    return SPECTRUM_ORDER.map(function(name){
+      var scaleIds = SPECTRUM_SCALES[name] || [];
+      var best = null;
+      scaleIds.forEach(function(id){
+        var r = byScale[id];
+        if(r){
+          var p = scalePct(r);
+          if(best === null || p > best.pct) best = {pct: p, level: levelFor(r)};
+        }
+      });
+      if(!best) return {name: name, pct: 0, level: "empty", hasData: false};
+      return {name: name, pct: best.pct, level: best.level, hasData: true};
+    });
+  }
+
+  // ─── Radar / Spider chart ─────────────────────────────────────────────────
+  function HITOP_RENDER_SPECTRA_RADAR(container, opts){
+    if(!container) return;
+    opts = opts || {};
+    var results = opts.results || [];
+    var spectra = computeSpectraPercentiles(results);
+    var n = spectra.length; // 6
+    var cx = 170, cy = 165, r = 110;
+    var rings = [25, 50, 75, 100];
+    var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function pt(angle, radius){
+      var rad = (angle - 90) * Math.PI / 180;
+      return [cx + radius * Math.cos(rad), cy + radius * Math.sin(rad)];
+    }
+
+    var angleStep = 360 / n;
+
+    // Build ring paths
+    var ringsSvg = rings.map(function(pct){
+      var rr = r * pct / 100;
+      var pts = Array.from({length: n}, function(_, i){ return pt(i * angleStep, rr); });
+      var d = "M " + pts.map(function(p){ return p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" L ") + " Z";
+      var isMajor = pct === 50 || pct === 100;
+      return '<path d="' + d + '" fill="none" stroke="#e6e4df" stroke-width="' + (isMajor ? "1.2" : "0.7") + '" />';
+    }).join("");
+
+    // Axis lines
+    var axesSvg = Array.from({length: n}, function(_, i){
+      var tip = pt(i * angleStep, r);
+      return '<line x1="' + cx + '" y1="' + cy + '" x2="' + tip[0].toFixed(1) + '" y2="' + tip[1].toFixed(1) + '" stroke="#e6e4df" stroke-width="0.8" />';
+    }).join("");
+
+    // Ring labels (25 / 50 / 75) — minimum 12px per design rules
+    var ringLabelsSvg = [25, 50, 75].map(function(pct){
+      var pos = pt(0, r * pct / 100);
+      return '<text x="' + (pos[0] + 3).toFixed(1) + '" y="' + pos[1].toFixed(1) + '" font-size="12" fill="#aaa" dominant-baseline="middle">' + pct + '</text>';
+    }).join("");
+
+    // Polygon data path
+    var polyPts = spectra.map(function(s, i){
+      var rr = s.hasData ? r * s.pct / 100 : 0;
+      return pt(i * angleStep, rr);
+    });
+    var polyD = "M " + polyPts.map(function(p){ return p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" L ") + " Z";
+
+    // Animation: if motion allowed, animate with a CSS animation on the polygon
+    var animId = "radar-poly-" + Math.random().toString(36).slice(2);
+    var polyStyle = prefersReduced ? "" : 'style="animation:radarFadeIn 0.55s ease forwards"';
+
+    var polygonSvg = '<path id="' + animId + '" d="' + polyD + '" fill="rgba(35,131,226,0.18)" stroke="#2383e2" stroke-width="2" stroke-linejoin="round" ' + polyStyle + ' />';
+
+    // Vertex dots with severity color
+    var levelColor = {high:"#c43b32", mid:"#e2922e", low:"#4f9d69", empty:"#ccc"};
+    var dotsSvg = spectra.map(function(s, i){
+      var rr = s.hasData ? r * s.pct / 100 : 0;
+      var p = pt(i * angleStep, rr);
+      var col = levelColor[s.level] || "#ccc";
+      var dotAnim = prefersReduced ? "" : 'style="animation:radarFadeIn 0.7s ease forwards"';
+      return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="5" fill="' + col + '" stroke="#fff" stroke-width="1.5" ' + dotAnim + ' />';
+    }).join("");
+
+    // Labels
+    var labelOffset = 20;
+    var labelsSvg = spectra.map(function(s, i){
+      var angle = i * angleStep;
+      var p = pt(angle, r + labelOffset);
+      var anchor = "middle";
+      if(angle > 10 && angle < 170) anchor = "start";
+      else if(angle > 190 && angle < 350) anchor = "end";
+      var glyph = s.hasData ? SEVERITY_GLYPH[s.level] || "" : "";
+      var glyphCol = levelColor[s.level] || "#ccc";
+      var nameAtom = s.hasData ? s.name : s.name;
+      var opacity = s.hasData ? "1" : "0.4";
+      var pctLabel = s.hasData ? (" " + s.pct + "%") : " s/d";
+      var glyphSpan = glyph ? '<tspan fill="' + glyphCol + '">' + glyph + ' </tspan>' : '';
+      return '<text x="' + p[0].toFixed(1) + '" y="' + p[1].toFixed(1) + '" text-anchor="' + anchor + '" font-size="12" font-weight="700" fill="#37352f" opacity="' + opacity + '" dominant-baseline="middle">' +
+        glyphSpan + esc(nameAtom) +
+        '<tspan font-size="12" font-weight="400" fill="#787774">' + esc(pctLabel) + '</tspan>' +
+        '</text>';
+    }).join("");
+
+    var svgStyle = prefersReduced ? "" : "<style>@keyframes radarFadeIn{from{opacity:0}to{opacity:1}}</style>";
+
+    container.innerHTML = svgStyle +
+      '<svg viewBox="0 0 340 330" role="img" aria-label="Radar de espectros HiTOP" style="width:100%;max-width:360px;display:block;margin:0 auto;overflow:visible">' +
+      ringsSvg + axesSvg + ringLabelsSvg + polygonSvg + dotsSvg + labelsSvg +
+      '</svg>';
+  }
+
+  // ─── Top-5 Elevations card ────────────────────────────────────────────────
+  function HITOP_RENDER_ELEVATIONS(container, opts){
+    if(!container) return;
+    opts = opts || {};
+    var results = opts.results || [];
+    var byScale = latestResults(results);
+    var items = Object.keys(byScale).map(function(id){
+      var r = byScale[id];
+      return {id: id, label: r.scale_label || id, pct: scalePct(r), level: levelFor(r)};
+    }).filter(function(it){ return it.pct > 0; });
+    items.sort(function(a, b){ return b.pct - a.pct; });
+    var top = items.slice(0, 5);
+
+    if(!top.length){
+      container.innerHTML = '<p class="muted elev-empty">Sin resultados disponibles aún.</p>';
+      return;
+    }
+    var levelColor = {high:"var(--bad)", mid:"var(--warn)", low:"var(--ok)", empty:"var(--track)"};
+    var rows = top.map(function(it){
+      var glyph = SEVERITY_GLYPH[it.level] || "";
+      var col = levelColor[it.level] || "var(--track)";
+      return '<div class="elev-row">' +
+        '<div class="elev-meta">' +
+        '<span class="elev-glyph ' + SEVERITY_CLASS[it.level] + '" aria-label="' + esc(it.level) + '">' + glyph + '</span>' +
+        '<span class="elev-label">' + esc(it.label) + '</span>' +
+        '<span class="elev-pct">' + it.pct + '</span>' +
+        '</div>' +
+        '<div class="elev-bar-wrap"><div class="elev-bar" style="width:' + it.pct + '%;background:' + col + '"></div></div>' +
+        '</div>';
+    }).join("");
+    container.innerHTML = rows;
+  }
+
+  window.HITOP_RENDER_DIMENSIONAL_MAP = render;
+  window.HITOP_RENDER_SPECTRA_RADAR = HITOP_RENDER_SPECTRA_RADAR;
+  window.HITOP_RENDER_ELEVATIONS = HITOP_RENDER_ELEVATIONS;
 })();

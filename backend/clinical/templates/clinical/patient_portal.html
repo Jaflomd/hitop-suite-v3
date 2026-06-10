@@ -2,152 +2,327 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HiTOP Paciente</title>
-<link rel="stylesheet" href="{% static 'clinical/webapp.css' %}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Yachay — Evaluación</title>
+  <!-- Google Fonts con fallbacks system-font si no hay red -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Montserrat:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Montserrat:wght@300;400;500;600&display=swap">
+  </noscript>
+  <link rel="stylesheet" href="{% static 'clinical/patient.css' %}">
+  {% csrf_token %}
 </head>
 <body>
-<header><strong>HiTOP</strong><span>Paciente</span><button id="logoutBtn" class="ghost hidden">Salir</button></header>
-<main>
-  <section id="loginView" class="center-card">
-    <form id="loginForm" class="card">
-      {% csrf_token %}
-      <h1>Ingreso paciente</h1>
-      <p class="muted">Yachay</p>
-      <label>Codigo HCL/Yachay<input id="hclCode" autocomplete="username"></label>
-      <label>DNI<input id="dni" type="password" inputmode="numeric" autocomplete="current-password"></label>
-      <button type="submit">Entrar</button>
-      <p id="loginErr" class="err"></p>
-    </form>
-  </section>
 
-  <section id="appView" class="hidden">
-    <div class="grid two">
-      <section class="card">
-        <h2>Paciente</h2>
-        <div class="metric"><span>Codigo interno</span><strong id="subjectId">s/d</strong></div>
-        <div class="metric"><span>Asignaciones</span><strong id="assignmentCount">0</strong></div>
-      </section>
-      <section class="card">
-        <h2>Bateria</h2>
-        <select id="assignmentSel"></select>
-        <div class="progress"><i id="progressBar"></i></div>
-        <p id="progressText" class="muted">s/d</p>
-      </section>
+<!-- ── Connectivity badge ─────────────────────────────────── -->
+<div id="pp-conn-badge" role="status" aria-live="polite">
+  <span class="dot" aria-hidden="true"></span>
+  <span class="badge-text">Guardado</span>
+</div>
+
+<!-- ── Retry notice ──────────────────────────────────────── -->
+<div id="pp-retry-notice" role="status" aria-live="polite">
+  Guardando respuestas…
+</div>
+
+<!-- ── Main app root ──────────────────────────────────────── -->
+<div id="pp-root">
+
+  <!-- ╔══════════════════════════════╗
+       ║  SCREEN: Login               ║
+       ╚══════════════════════════════╝ -->
+  <section id="pp-screen-login" class="pp-screen active" role="main" aria-label="Inicio de sesión">
+    <div class="pp-brand" style="margin-top:48px">
+      <!-- Marca SVG inline (no requiere carga de red) -->
+      <svg class="pp-logo-mark" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="28" cy="28" r="26" stroke="#2B5282" stroke-width="2.5" fill="#FDEBD0"/>
+        <path d="M28 14 L36 28 L28 34 L20 28 Z" fill="#D4AF37" opacity=".85"/>
+        <path d="M28 34 L28 44" stroke="#2B5282" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <h1>Yachay</h1>
+      <p class="pp-tagline">Evaluación de salud mental</p>
     </div>
 
-    <section id="dimensionMap"></section>
+    <div class="pp-card pp-login-card" style="max-width:440px">
+      <form id="pp-login-form" novalidate autocomplete="on">
 
-    <section id="scaleCard" class="card">
-      <h2 id="scaleTitle">Escala</h2>
-      <p id="scaleInstr" class="muted"></p>
-      <div id="items"></div>
-      <div class="actions">
-        <button id="saveScaleBtn">Guardar escala</button>
-        <button id="refreshBtn" class="ghost">Actualizar</button>
-      </div>
-      <p id="scaleMsg" class="muted"></p>
-    </section>
+        <div class="pp-form-group">
+          <label for="pp-hcl">Código HCL / Yachay</label>
+          <input
+            id="pp-hcl"
+            type="text"
+            name="username"
+            autocomplete="username"
+            autocapitalize="none"
+            autocorrect="off"
+            spellcheck="false"
+            placeholder="Ej.: YA-2024-001"
+            required
+          >
+        </div>
 
-    <section class="card">
-      <h2>Resultados registrados</h2>
-      <div id="resultsList" class="list"></div>
-    </section>
+        <div class="pp-form-group">
+          <label for="pp-dni">DNI</label>
+          <div class="pp-input-wrap">
+            <input
+              id="pp-dni"
+              type="password"
+              name="current-password"
+              autocomplete="current-password"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              placeholder="Tu número de DNI"
+              required
+            >
+            <button
+              type="button"
+              id="pp-eye-btn"
+              class="pp-eye-btn"
+              aria-label="Mostrar DNI"
+              tabindex="0"
+            >👁</button>
+          </div>
+        </div>
+
+        <div id="pp-login-err" class="pp-error-msg" role="alert" aria-live="assertive"></div>
+
+        <button type="submit" id="pp-login-submit" class="pp-btn pp-btn-primary" style="margin-top:8px">
+          Entrar
+        </button>
+
+      </form>
+    </div>
   </section>
-</main>
+
+
+  <!-- ╔══════════════════════════════╗
+       ║  SCREEN: Journey Map         ║
+       ╚══════════════════════════════╝ -->
+  <section id="pp-screen-map" class="pp-screen" hidden role="main" aria-label="Mapa de tu evaluación">
+
+    <!-- Battery selector (solo visible si hay >1 baterías pendientes) -->
+    <div id="pp-battery-sel-wrap" class="pp-assignment-sel-wrap">
+      <label for="pp-battery-sel">Selecciona tu evaluación</label>
+      <select id="pp-battery-sel" aria-label="Batería de evaluación"></select>
+    </div>
+
+    <div class="pp-map-header">
+      <h2 id="pp-map-title">Tu evaluación</h2>
+      <p id="pp-map-subtitle">Aquí verás tu progreso a través de cada sección.</p>
+    </div>
+
+    <div id="pp-chapters" class="pp-chapters" role="list" aria-label="Secciones de la evaluación"></div>
+
+    <div class="pp-map-actions">
+      <button id="pp-map-start-btn" type="button" class="pp-btn pp-btn-gold">
+        Comenzar
+      </button>
+      <button id="pp-map-pause-btn" type="button" class="pp-btn pp-btn-ghost pp-btn-sm hidden">
+        Pausar
+      </button>
+    </div>
+
+  </section>
+
+
+  <!-- ╔══════════════════════════════╗
+       ║  SCREEN: Chapter Intro       ║
+       ╚══════════════════════════════╝ -->
+  <section id="pp-screen-intro" class="pp-screen" hidden role="main" aria-label="Instrucciones de la sección">
+    <div class="pp-card pp-intro-card" style="max-width:520px">
+      <p id="pp-intro-number" class="pp-intro-number">Sección 1 de 5</p>
+      <h2 id="pp-intro-title" class="pp-intro-title">Nombre de la sección</h2>
+      <p id="pp-intro-instr" class="pp-intro-instr">
+        Lee cada afirmación y elige la opción que mejor describe tu experiencia reciente.
+      </p>
+      <p id="pp-intro-meta" class="pp-intro-meta muted">0 preguntas</p>
+
+      <div id="pp-intro-opts" class="pp-intro-opts" aria-label="Opciones de respuesta disponibles"></div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <button id="pp-intro-start-btn" type="button" class="pp-btn pp-btn-gold">
+          Comenzar esta sección
+        </button>
+        <button id="pp-intro-back-btn" type="button" class="pp-btn pp-btn-ghost pp-btn-sm">
+          ← Volver al mapa
+        </button>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════════════╗
+       ║  SCREEN: Item (one per page) ║
+       ╚══════════════════════════════╝ -->
+  <section id="pp-screen-item" class="pp-screen" hidden role="main" aria-label="Pregunta actual">
+
+    <!-- Aria live region for screen readers -->
+    <span id="pp-progress-aria" class="sr-only" aria-live="polite" aria-atomic="true"></span>
+
+    <div class="pp-item-shell">
+
+      <!-- Progress header -->
+      <div class="pp-item-header">
+        <div class="pp-progress-label">
+          <span id="pp-progress-counter" class="pp-progress-counter">
+            Pregunta <strong>1</strong> de 1
+          </span>
+          <span id="pp-progress-chapter" class="pp-progress-chapter">Sección 1 de 1</span>
+        </div>
+        <div class="pp-progress-bar-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+          <div id="pp-progress-fill" class="pp-progress-bar-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Nav row -->
+      <div class="pp-item-nav">
+        <button id="pp-back-btn" type="button" class="pp-back-btn" aria-label="Volver a la pregunta anterior">
+          ← Atrás
+        </button>
+        <button id="pp-pause-btn" type="button" class="pp-pause-btn" aria-label="Pausar evaluación">
+          Pausar
+        </button>
+      </div>
+
+      <!-- Animated content area -->
+      <div id="pp-item-content" class="pp-item-content">
+        <p id="pp-item-question" class="pp-item-question"></p>
+        <div id="pp-item-options" class="pp-item-options" role="group" aria-label="Opciones de respuesta"></div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════════════╗
+       ║  SCREEN: Celebration         ║
+       ╚══════════════════════════════╝ -->
+  <section id="pp-screen-celebrate" class="pp-screen" hidden role="main" aria-label="Sección completada">
+    <div class="pp-card pp-celebrate-card" style="max-width:420px">
+
+      <div class="pp-checkmark-wrap" aria-hidden="true">
+        <svg id="pp-checkmark-svg" class="pp-checkmark-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Completado">
+          <circle cx="40" cy="40" r="36"/>
+          <path d="M24 40 L34 51 L56 29"/>
+        </svg>
+      </div>
+
+      <h2 class="pp-celebrate-title">¡Muy bien!</h2>
+      <p id="pp-celebrate-msg" class="pp-celebrate-msg">Lo estás haciendo muy bien.</p>
+      <p id="pp-celebrate-stat" class="pp-celebrate-stat"></p>
+
+      <button id="pp-celebrate-next-btn" type="button" class="pp-btn pp-btn-gold">
+        Siguiente sección
+      </button>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════════════╗
+       ║  SCREEN: All Done            ║
+       ╚══════════════════════════════╝ -->
+  <section id="pp-screen-done" class="pp-screen" hidden role="main" aria-label="Evaluación completada">
+    <div class="pp-card pp-done-card" style="max-width:460px">
+      <span class="pp-done-icon" aria-hidden="true">✦</span>
+      <div class="pp-done-divider" aria-hidden="true"></div>
+      <h2 class="pp-done-title">¡Gracias!</h2>
+      <p class="pp-done-msg">
+        Completaste toda la evaluación.<br>
+        Tu participación es muy valiosa para nosotros.
+      </p>
+      <p class="pp-done-hint">
+        Puedes entregar la tablet al equipo cuando quieras.
+      </p>
+      <div style="display:flex; align-items:center; justify-content:center; gap:8px; color:#5a5a7a; font-size:14px">
+        <span aria-hidden="true">🔒</span>
+        Tus respuestas están guardadas de forma segura.
+      </div>
+    </div>
+  </section>
+
+</div><!-- #pp-root -->
+
+
+<!-- ╔══════════════════════════════════╗
+     ║  OVERLAY: Pause                  ║
+     ╚══════════════════════════════════╝ -->
+<div id="pp-pause-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="Pausa">
+  <div class="pp-pause-card">
+    <span class="pp-pause-icon" aria-hidden="true">☕</span>
+    <h2 class="pp-pause-title">Momento de descanso</h2>
+    <p class="pp-pause-msg">
+      Puedes tomarte un descanso tranquilamente.<br>
+      Cuando estés listo, continúa desde donde lo dejaste.
+    </p>
+    <p class="pp-pause-saved" role="status">
+      <span aria-hidden="true">✓</span> Tu progreso está guardado en esta tablet.
+    </p>
+    <button id="pp-pause-resume-btn" type="button" class="pp-btn pp-btn-primary">
+      Continuar
+    </button>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════╗
+     ║  BANNER: Pause suggestion        ║
+     ╚══════════════════════════════════╝ -->
+<div id="pp-pause-suggest" class="hidden" role="complementary" aria-label="Sugerencia de pausa">
+  <div class="pp-suggest-text">
+    <strong>¿Quieres descansar un momento?</strong>
+    Tu progreso está guardado.
+  </div>
+  <div class="pp-suggest-actions">
+    <button id="pp-suggest-pause-btn" type="button" class="pp-suggest-pause-btn">
+      Pausar
+    </button>
+    <button id="pp-suggest-dismiss-btn" type="button" class="pp-suggest-dismiss-btn" aria-label="Descartar sugerencia">
+      ✕
+    </button>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════╗
+     ║  OVERLAY: Re-login (mid-session) ║
+     ╚══════════════════════════════════╝ -->
+<div id="pp-relogin-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="Tu sesión expiró">
+  <div class="pp-relogin-card">
+    <h2 class="pp-relogin-title">Tu sesión expiró</h2>
+    <p class="pp-relogin-msg">
+      Por seguridad, la sesión se cerró. Ingresa de nuevo para continuar —<br>
+      tus respuestas están guardadas en esta tablet.
+    </p>
+    <form id="pp-relogin-form" novalidate autocomplete="on">
+      <div class="pp-form-group">
+        <label for="pp-relogin-hcl">Código HCL / Yachay</label>
+        <input id="pp-relogin-hcl" type="text" name="username" autocomplete="username"
+          autocapitalize="none" autocorrect="off" spellcheck="false" required>
+      </div>
+      <div class="pp-form-group">
+        <label for="pp-relogin-dni">DNI</label>
+        <div class="pp-input-wrap">
+          <input id="pp-relogin-dni" type="password" name="current-password"
+            autocomplete="current-password" inputmode="numeric" pattern="[0-9]*" required>
+          <button type="button" id="pp-relogin-eye-btn" class="pp-eye-btn" aria-label="Mostrar DNI">👁</button>
+        </div>
+      </div>
+      <div id="pp-relogin-err" class="pp-error-msg" role="alert" aria-live="assertive"></div>
+      <button type="submit" id="pp-relogin-submit" class="pp-btn pp-btn-primary" style="margin-top:8px">
+        Continuar evaluación
+      </button>
+    </form>
+  </div>
+</div>
+
+
+<!-- Scripts — scale_catalog primero, luego la app -->
 <script src="{% static 'clinical/scale_catalog.js' %}"></script>
-<script src="{% static 'clinical/dimensional_map.js' %}"></script>
-<script>
-const state={patient:null,assignments:[],assignment:null,results:[],currentScale:null};
-function csrfToken(){const m=document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);return m?decodeURIComponent(m[1]):document.querySelector("[name=csrfmiddlewaretoken]").value;}
-async function api(path,opts={}){const method=opts.method||"GET";const res=await fetch(path,{credentials:"same-origin",headers:{"Content-Type":"application/json",...(method==="GET"?{}:{"X-CSRFToken":csrfToken()}),...(opts.headers||{})},...opts});const data=await res.json();if(!res.ok||data.ok===false)throw new Error(data.error||"Error");return data;}
-function showApp(){loginView.classList.add("hidden");appView.classList.remove("hidden");logoutBtn.classList.remove("hidden");}
-function showLogin(){loginView.classList.remove("hidden");appView.classList.add("hidden");logoutBtn.classList.add("hidden");}
-function selectedAssignment(){return state.assignments.find(a=>String(a.id)===assignmentSel.value)||state.assignments[0]||null;}
-function upsertAssignment(assignment){
-  if(!assignment)return;
-  const idx=state.assignments.findIndex(a=>a.id===assignment.id);
-  if(idx>=0)state.assignments[idx]=assignment;else state.assignments.unshift(assignment);
-  state.assignment=assignment;
-}
-function scaleFromId(scaleId){
-  const scale=(state.assignment&&state.assignment.scales||[]).find(s=>s.scale_id===scaleId);
-  return scale?{scale_id:scale.scale_id,scale_label:scale.scale_label}:null;
-}
-function renderAssignments(){
-  subjectId.textContent=state.patient?state.patient.subject_id:"s/d";
-  assignmentCount.textContent=state.assignments.length;
-  assignmentSel.innerHTML=state.assignments.map(a=>`<option value="${a.id}">${a.template_name} · ${a.progress.done}/${a.progress.total}</option>`).join("");
-  if(state.assignment)assignmentSel.value=state.assignment.id;
-  state.assignment=selectedAssignment();
-  renderProgress();
-  renderDimensionalView();
-}
-function renderProgress(){
-  const a=state.assignment;if(!a){progressBar.style.width="0%";progressText.textContent="Sin bateria asignada.";return;}
-  progressBar.style.width=a.progress.percent+"%";
-  progressText.textContent=`${a.progress.done}/${a.progress.total} escalas · ${a.status}`;
-}
-function renderDimensionalView(){
-  HITOP_RENDER_DIMENSIONAL_MAP(dimensionMap,{assignment:state.assignment,results:state.results,selectedScaleId:state.currentScale&&state.currentScale.scale_id,mode:"patient",onSelectScale:(scaleId)=>{const scale=scaleFromId(scaleId);if(scale){state.currentScale=scale;renderScale();renderDimensionalView();}},onPrimaryAction:(scaleId)=>{const scale=scaleFromId(scaleId);if(scale){state.currentScale=scale;renderScale();renderDimensionalView();scaleCard.scrollIntoView({behavior:"smooth",block:"start"});}}});
-}
-async function loadAssignments(){
-  const data=await api("/api/patient/assignments/");
-  state.assignments=data.assignments||[];
-  renderAssignments();
-  await loadNext();
-  await loadResults();
-}
-async function loadNext(){
-  state.assignment=selectedAssignment();
-  if(!state.assignment){scaleTitle.textContent="Sin bateria";items.innerHTML="";return;}
-  const data=await api(`/api/patient/assignments/${state.assignment.id}/next/`);
-  upsertAssignment(data.assignment);
-  state.currentScale=data.next_scale;
-  renderAssignments();
-  renderScale();
-}
-async function loadResults(){
-  if(!state.assignment){resultsList.innerHTML="";return;}
-  const data=await api(`/api/patient/assignments/${state.assignment.id}/results/`);
-  state.results=data.results||[];
-  resultsList.innerHTML=state.results.length?state.results.map(r=>`<div class="row"><strong>${r.scale_label}</strong><span>${r.raw_value}/${r.max_value} · ${r.percentile}/100</span></div>`).join(""):"<p class='muted'>Sin resultados registrados.</p>";
-  renderDimensionalView();
-}
-function renderScale(){
-  scaleMsg.textContent="";
-  renderDimensionalView();
-  if(!state.currentScale){scaleTitle.textContent="Bateria completa";scaleInstr.textContent="Devuelve la tablet al equipo.";items.innerHTML="";saveScaleBtn.disabled=true;return;}
-  const scale=HITOP_SCALE_CATALOG[state.currentScale.scale_id];
-  saveScaleBtn.disabled=false;
-  scaleTitle.textContent=scale?scale.label:state.currentScale.scale_label;
-  scaleInstr.textContent="Responde todos los items.";
-  items.innerHTML=(scale.items||[]).map((item,i)=>`<fieldset class="item"><legend>${i+1}. ${item}</legend>${scale.opts.map((o,v)=>`<label class="opt"><input type="radio" name="q${i}" value="${v}"> ${o}</label>`).join("")}</fieldset>`).join("");
-}
-async function saveScale(){
-  const scale=HITOP_SCALE_CATALOG[state.currentScale.scale_id]; if(!scale)return;
-  const answers=scale.items.map((_,i)=>{const el=document.querySelector(`input[name=q${i}]:checked`);return el?Number(el.value):null;});
-  if(answers.some(v=>v===null)){scaleMsg.textContent="Faltan items por responder.";return;}
-  const scored=HITOP_SCORE_SCALE(scale,answers);
-  const data=await api(`/api/patient/assignments/${state.assignment.id}/results/`,{method:"POST",body:JSON.stringify(scored)});
-  upsertAssignment(data.assignment);
-  scaleMsg.textContent="Guardado.";
-  await loadNext();
-  await loadResults();
-}
-async function boot(){
-  await api("/api/auth/csrf/");
-  const urlToken=new URLSearchParams(location.search).get("token");
-  if(urlToken){const data=await api("/api/patient/auth/token-login/",{method:"POST",body:JSON.stringify({token:urlToken})});state.patient=data.patient;state.assignments=[data.assignment];showApp();renderAssignments();await loadNext();await loadResults();return;}
-  const me=await api("/api/patient/auth/me/");
-  if(me.authenticated){state.patient=me.patient;showApp();await loadAssignments();}else showLogin();
-}
-loginForm.onsubmit=async e=>{e.preventDefault();loginErr.textContent="";try{const data=await api("/api/patient/auth/login/",{method:"POST",body:JSON.stringify({hcl_code:hclCode.value,dni:dni.value})});state.patient=data.patient;showApp();await loadAssignments();}catch(ex){loginErr.textContent=ex.message;}};
-assignmentSel.onchange=async()=>{state.assignment=selectedAssignment();await loadNext();await loadResults();};
-saveScaleBtn.onclick=saveScale;refreshBtn.onclick=loadAssignments;
-logoutBtn.onclick=async()=>{await api("/api/patient/auth/logout/",{method:"POST",body:"{}"});showLogin();};
-boot().catch(()=>showLogin());
-</script>
+<script src="{% static 'clinical/patient_app.js' %}"></script>
 </body>
 </html>

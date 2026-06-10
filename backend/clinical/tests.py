@@ -2,10 +2,19 @@ import json
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.core.cache import cache
 from django.core.management import call_command
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 
 from .models import AssessmentResult, AssessmentSession, AuditLog, BackupRun, BatteryAssignment, BatteryTemplate, ConsentRecord, Patient, PatientIdentifier, PatientPortalAccess, TabletAccessToken
+
+# Configuración de caché aislada para tests de rate-limiting
+_TEST_CACHE = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "hitop-test-rate-limit",
+    }
+}
 
 
 class ClinicalBackendTests(TestCase):
@@ -311,3 +320,102 @@ class ClinicalBackendTests(TestCase):
         self.assertIn("SUBJ-", text)
         self.assertNotIn("export1", text)
         self.assertNotIn("44445555", text)
+
+
+@override_settings(CACHES=_TEST_CACHE)
+class RateLimitTests(TestCase):
+    """
+    Tests de rate-limiting para los tres endpoints de autenticación.
+    Se usa override_settings + cache.clear() en setUp para aislar cada test.
+    """
+
+    def setUp(self):
+        cache.clear()
+        # Paciente de prueba para los tests de patient_login
+        self.user = get_user_model().objects.create_user(username="rl_staff", password="rl-safe-password")
+        patient = Patient.objects.create(subject_id="SUBJ-RL", created_by=self.user)
+        access = PatientPortalAccess(patient=patient, created_by=self.user)
+        access.set_hcl_code("YCH-RL001")
+        access.set_dni_password("rl123456")
+        access.save()
+        self.client = Client()
+
+    def _patient_login(self, hcl_code="YCH-RL001", dni="rl123456"):
+        return self.client.post(
+            "/api/patient/auth/login/",
+            data=json.dumps({"hcl_code": hcl_code, "dni": dni}),
+            content_type="application/json",
+        )
+
+    def _staff_login(self, username="rl_staff", password="wrong"):
+        return self.client.post(
+            "/api/auth/login/",
+            data=json.dumps({"username": username, "password": password}),
+            content_type="application/json",
+        )
+
+    def _token_login(self, token="bad-token"):
+        return self.client.post(
+            "/api/patient/auth/token-login/",
+            data=json.dumps({"token": token}),
+            content_type="application/json",
+        )
+
+    # ------------------------------------------------------------------
+    # (a) El 6º intento fallido de login paciente devuelve 429
+    # ------------------------------------------------------------------
+    def test_patient_login_sixth_attempt_returns_429(self):
+        """Cinco fallos seguidos deben agotar el límite; el 6º retorna 429."""
+        for i in range(5):
+            resp = self._patient_login(hcl_code="YCH-RL001", dni="wrong_dni")
+            self.assertEqual(resp.status_code, 401, f"Intento {i+1} debería ser 401")
+
+        sixth = self._patient_login(hcl_code="YCH-RL001", dni="wrong_dni")
+        self.assertEqual(sixth.status_code, 429)
+        data = sixth.json()
+        self.assertFalse(data["ok"])
+        self.assertIn("Espera", data["error"])
+        # Verificar que el evento de auditoría se registró
+        self.assertTrue(AuditLog.objects.filter(action="auth.rate_limited").exists())
+
+    # ------------------------------------------------------------------
+    # (b) Login correcto tras 2 fallos funciona y resetea el contador
+    # ------------------------------------------------------------------
+    def test_patient_login_success_after_failures_resets_counter(self):
+        """Dos fallos seguidos de un login correcto deben funcionar y limpiar el contador."""
+        # Dos intentos fallidos
+        self._patient_login(hcl_code="YCH-RL001", dni="wrong1")
+        self._patient_login(hcl_code="YCH-RL001", dni="wrong2")
+
+        # Login correcto
+        resp = self._patient_login(hcl_code="YCH-RL001", dni="rl123456")
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["ok"])
+
+        # Después del login correcto los contadores deben estar limpios:
+        # se pueden hacer 5 nuevos intentos fallidos sin bloqueo inmediato
+        for i in range(5):
+            r = self._patient_login(hcl_code="YCH-RL001", dni="wrong_again")
+            self.assertEqual(r.status_code, 401, f"Tras reset, intento {i+1} debería ser 401, no bloqueado")
+
+    # ------------------------------------------------------------------
+    # (c) Rate limit del token-login
+    # ------------------------------------------------------------------
+    def test_token_login_rate_limited_after_threshold(self):
+        """
+        El endpoint de token-login aplica rate-limit por IP.
+        El límite secundario es 20/15min; usamos tokens inválidos para agotar el
+        contador y verificar que la respuesta cambia a 429.
+        """
+        # Agotamos los 20 intentos permitidos por IP
+        for i in range(20):
+            resp = self._token_login(token=f"invalid-token-{i}")
+            self.assertEqual(resp.status_code, 401, f"Intento {i+1} debería ser 401")
+
+        # El intento 21 debe estar bloqueado
+        resp_blocked = self._token_login(token="invalid-token-extra")
+        self.assertEqual(resp_blocked.status_code, 429)
+        data = resp_blocked.json()
+        self.assertFalse(data["ok"])
+        self.assertIn("Espera", data["error"])
+        self.assertTrue(AuditLog.objects.filter(action="auth.rate_limited", metadata__scope="token_login").exists())

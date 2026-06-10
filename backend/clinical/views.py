@@ -12,9 +12,10 @@ from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from .audit import log_event
+from .audit import client_ip, log_event
 from .batteries import DEFAULT_BATTERIES, SCALE_LABELS
 from .crypto import lookup_hash, normalize_lookup
+from .throttle import clear_failures, is_rate_limited, register_failure
 from .models import (
     AssessmentResult,
     AssessmentSession,
@@ -30,6 +31,13 @@ from .models import (
     TabletAccessToken,
 )
 
+
+# Rate-limit: máximo de fallos por ventana de 15 minutos (900 s)
+_RL_WINDOW = 900
+# Límite por combinación IP+identificador
+_RL_LIMIT_ID = 5
+# Límite por IP sola (secundario, más permisivo)
+_RL_LIMIT_IP = 20
 
 PATIENT_SESSION_KEY = "patient_portal_access_id"
 
@@ -262,10 +270,30 @@ def login_view(request):
         return bad_request("Invalid JSON.")
     username = body.get("username", "")
     password = body.get("password", "")
+
+    ip = client_ip(request)
+    # Clave combinada IP+username (nunca se almacena la contraseña)
+    rl_id_key = f"{ip}:{username}"
+
+    # Comprobación de límite antes de intentar autenticar
+    if is_rate_limited("staff_login_id", rl_id_key, _RL_LIMIT_ID, _RL_WINDOW) or \
+            is_rate_limited("staff_login_ip", ip, _RL_LIMIT_IP, _RL_WINDOW):
+        log_event(request, "auth.rate_limited", metadata={
+            "scope": "staff_login",
+            "hint": username[:2] + "***" if username else "",
+        })
+        return JsonResponse({"ok": False, "error": "Demasiados intentos. Espera unos minutos."}, status=429)
+
     user = authenticate(request, username=username, password=password)
     if not user:
+        register_failure("staff_login_id", rl_id_key, _RL_WINDOW)
+        register_failure("staff_login_ip", ip, _RL_WINDOW)
         log_event(request, "auth.login_failed", metadata={"username": username})
         return bad_request("Invalid credentials.", status=401)
+
+    # Login exitoso: limpiar contadores
+    clear_failures("staff_login_id", rl_id_key)
+    clear_failures("staff_login_ip", ip)
     login(request, user)
     log_event(request, "auth.login", metadata={"username": username})
     return JsonResponse({"ok": True, "user": {"id": user.id, "username": user.username}})
@@ -295,9 +323,23 @@ def patient_login_view(request):
 
     hcl_code = body.get("hcl_code", "")
     dni = body.get("dni", "")
-    hcl_hint = normalize_lookup(hcl_code)[-4:]
+    hcl_hint = normalize_lookup(hcl_code)[-4:] if hcl_code else ""
     if not hcl_code or not dni:
         return bad_request("Codigo HCL/Yachay and DNI are required.")
+
+    ip = client_ip(request)
+    # Clave combinada: usamos el hash del código HCL para no guardar el texto plano
+    hcl_hash_short = lookup_hash(hcl_code, "patient-hcl")[:16]
+    rl_id_key = f"{ip}:{hcl_hash_short}"
+
+    # Comprobación de límite antes de buscar en BD (evita timing oracle)
+    if is_rate_limited("patient_login_id", rl_id_key, _RL_LIMIT_ID, _RL_WINDOW) or \
+            is_rate_limited("patient_login_ip", ip, _RL_LIMIT_IP, _RL_WINDOW):
+        log_event(request, "auth.rate_limited", metadata={
+            "scope": "patient_login",
+            "hint": hcl_hint,
+        })
+        return JsonResponse({"ok": False, "error": "Demasiados intentos. Espera unos minutos."}, status=429)
 
     access = (
         PatientPortalAccess.objects.select_related("patient")
@@ -305,13 +347,20 @@ def patient_login_view(request):
         .first()
     )
     if not access:
+        register_failure("patient_login_id", rl_id_key, _RL_WINDOW)
+        register_failure("patient_login_ip", ip, _RL_WINDOW)
         log_event(request, "patient_auth.login_failed", metadata={"hcl_hint": hcl_hint, "reason": "unknown_code"})
         return bad_request("Invalid credentials.", status=401)
     if not access.check_dni_password(dni):
+        register_failure("patient_login_id", rl_id_key, _RL_WINDOW)
+        register_failure("patient_login_ip", ip, _RL_WINDOW)
         access.mark_login_failed()
         log_event(request, "patient_auth.login_failed", entity=access.patient, metadata={"hcl_hint": hcl_hint, "reason": "bad_secret"})
         return bad_request("Invalid credentials.", status=401)
 
+    # Login exitoso: limpiar contadores
+    clear_failures("patient_login_id", rl_id_key)
+    clear_failures("patient_login_ip", ip)
     request.session[PATIENT_SESSION_KEY] = access.pk
     request.session.modified = True
     access.mark_login_success()
@@ -344,10 +393,24 @@ def patient_token_login_view(request):
     token = body.get("token") or request.GET.get("token")
     if not token:
         return bad_request("token is required.")
+
+    ip = client_ip(request)
+    # Para tokens usamos solo el límite por IP (los tokens son opacos y de un solo uso)
+    if is_rate_limited("token_login_ip", ip, _RL_LIMIT_IP, _RL_WINDOW):
+        log_event(request, "auth.rate_limited", metadata={
+            "scope": "token_login",
+            "hint": token[:4] + "***" if token else "",
+        })
+        return JsonResponse({"ok": False, "error": "Demasiados intentos. Espera unos minutos."}, status=429)
+
     tablet = TabletAccessToken.find_valid(token)
     if not tablet:
+        register_failure("token_login_ip", ip, _RL_WINDOW)
         log_event(request, "patient_auth.token_failed", metadata={"reason": "invalid_or_expired"})
         return bad_request("Invalid token.", status=401)
+
+    # Token válido: limpiar contador de IP
+    clear_failures("token_login_ip", ip)
     tablet.mark_used()
     request.session["tablet_assignment_id"] = tablet.assignment_id
     try:

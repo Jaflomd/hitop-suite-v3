@@ -80,6 +80,28 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# --------------------------------------------------------------------------
+# Caché en memoria local (sin dependencias externas).
+# Se usa para rate-limiting de intentos de login (throttle.py).
+# --------------------------------------------------------------------------
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "hitop-rate-limit",
+    }
+}
+
+# --------------------------------------------------------------------------
+# Sesiones: caducidad de 8 horas y expiración al cerrar el navegador.
+# Esto protege las tabletas compartidas usadas en consultas: si el
+# profesional o el paciente deja abierta la sesión sin cerrar el navegador,
+# la cookie de sesión se invalida al cerrar la pestaña/navegador y en todo
+# caso expira a las 8 h aunque el navegador quede abierto (p.ej. bloqueo
+# de pantalla sin cierre).
+# --------------------------------------------------------------------------
+SESSION_COOKIE_AGE = 8 * 60 * 60  # 8 horas en segundos
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
 CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"

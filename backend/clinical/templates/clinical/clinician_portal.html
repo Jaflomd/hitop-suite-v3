@@ -8,7 +8,13 @@
 <link rel="stylesheet" href="{% static 'clinical/webapp.css' %}">
 </head>
 <body>
-<header><strong>HiTOP</strong><span>Clinico</span><a class="pill" href="/research/">Research</a><a class="pill" href="/admin/">Admin</a></header>
+<header>
+  <strong>HiTOP</strong>
+  <span>Clinico</span>
+  <a class="pill" href="/research/">Research</a>
+  <a class="pill" href="/admin/">Admin</a>
+  <button id="printBtn" class="hidden" title="Imprimir reporte PDF" onclick="window.print()" type="button">&#128438; Imprimir</button>
+</header>
 <section id="loginView" class="center-card">
   <form id="staffLoginForm" class="card">
     {% csrf_token %}
@@ -20,12 +26,23 @@
   </form>
 </section>
 <main id="appView" class="hidden">
+  <!-- Print cover (hidden on screen, visible when printing) -->
+  <div class="print-cover" id="printCover">
+    <h1 id="printTitle">Perfil dimensional HiTOP</h1>
+    <p id="printSubject"></p>
+    <p id="printAssignment"></p>
+    <p class="print-date" id="printDate"></p>
+  </div>
+
   <div class="grid two">
     <section class="card">
       <h1>Pacientes</h1>
       {% csrf_token %}
       <label>Buscar<input id="searchBox" placeholder="SUBJ-001"></label>
-      <div class="actions"><button id="refreshBtn">Actualizar</button><a class="pill" href="/api/clinician/export/csv/">Export CSV</a></div>
+      <div class="actions">
+        <button id="refreshBtn">Actualizar</button>
+        <a class="pill" href="/api/clinician/export/csv/">Export CSV</a>
+      </div>
       <div id="patientList" class="list"></div>
     </section>
     <section class="card">
@@ -34,6 +51,19 @@
       <div id="assignmentList"></div>
     </section>
   </div>
+
+  <!-- Profile summary: radar + elevations (shown when patient selected) -->
+  <div id="profileSummary" class="profile-summary hidden">
+    <div class="profile-card">
+      <p class="profile-card-title">Perfil de espectros</p>
+      <div id="radarContainer"></div>
+    </div>
+    <div class="profile-card">
+      <p class="profile-card-title">Elevaciones principales</p>
+      <div id="elevationsContainer"></div>
+    </div>
+  </div>
+
   <section id="dimensionMap"></section>
   <section class="card">
     <h2>Resultados longitudinales</h2>
@@ -48,10 +78,29 @@ function csrfToken(){const m=document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
 async function api(path,opts={}){const method=opts.method||"GET";const res=await fetch(path,{credentials:"same-origin",headers:{"Content-Type":"application/json",...(method==="GET"?{}:{"X-CSRFToken":csrfToken()}),...(opts.headers||{})},...opts});const data=await res.json();if(!res.ok||data.ok===false)throw new Error(data.error||"Error");return data;}
 function showApp(){loginView.classList.add("hidden");appView.classList.remove("hidden");}
 function showLogin(){loginView.classList.remove("hidden");appView.classList.add("hidden");}
+function renderProfileSummary(){
+  const results=selected&&selected.results?selected.results:[];
+  if(!selected){
+    profileSummary.classList.add("hidden");
+    printBtn.classList.add("hidden");
+    return;
+  }
+  profileSummary.classList.remove("hidden");
+  printBtn.classList.remove("hidden");
+  HITOP_RENDER_SPECTRA_RADAR(radarContainer,{results:results});
+  HITOP_RENDER_ELEVATIONS(elevationsContainer,{results:results});
+  // Update print cover
+  const now=new Date();
+  const dateStr=now.toLocaleDateString("es-MX",{year:"numeric",month:"long",day:"numeric"});
+  printSubject.textContent="Paciente: "+selected.patient.subject_id;
+  printAssignment.textContent=selectedAssignment?"Bateria: "+selectedAssignment.template_name:"";
+  printDate.textContent="Fecha de impresion: "+dateStr;
+}
 function renderDimensionalView(){
   const assignment=selectedAssignment||(selected&&selected.assignments&&selected.assignments[0])||null;
   const results=selected&&selected.results?selected.results:[];
   HITOP_RENDER_DIMENSIONAL_MAP(dimensionMap,{assignment:assignment,results:results,selectedScaleId:selectedScaleId,mode:"clinician",onSelectScale:(scaleId)=>{selectedScaleId=scaleId;renderDimensionalView();}});
+  renderProfileSummary();
 }
 function renderPatients(){
   patientList.innerHTML=patients.map(r=>{

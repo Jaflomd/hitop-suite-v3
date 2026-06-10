@@ -42,8 +42,8 @@
     --sv-high:#C28B77; --sv-mid:#D4AF37; --sv-low:#4F9D69; --track:#D8E3F0;
     --radius:8px;
   }
-  [data-theme="yachay"] body{font-family:"Montserrat",Calibri,sans-serif;line-height:1.48;background:linear-gradient(180deg,#FDEBD0 0,#FFF8EC 42%,#EEF4FF 100%) fixed}
-  [data-theme="yachay"] h1,[data-theme="yachay"] h2,[data-theme="yachay"] .brand,[data-theme="yachay"] .pc{font-family:"Cinzel",Georgia,serif;letter-spacing:.04em;color:var(--accent)}
+  [data-theme="yachay"] body{font-family:"Montserrat",Calibri,-apple-system,system-ui,sans-serif;line-height:1.48;background:linear-gradient(180deg,#FDEBD0 0,#FFF8EC 42%,#EEF4FF 100%) fixed}
+  [data-theme="yachay"] h1,[data-theme="yachay"] h2,[data-theme="yachay"] .brand,[data-theme="yachay"] .pc{font-family:"Cinzel",Georgia,"Times New Roman",serif;letter-spacing:.04em;color:var(--accent)}
   [data-theme="yachay"] header{background:#2B5282;color:#FDEBD0;border-bottom:3px solid #D4AF37;box-shadow:0 12px 28px rgba(26,58,92,.18)}
   [data-theme="yachay"] header .brand{color:#FDEBD0}
   [data-theme="yachay"] header select,[data-theme="yachay"] header button.act{background:#FEFCF8;color:#1A3A5C;border-color:rgba(253,235,208,.45)}
@@ -60,17 +60,29 @@
   [data-theme="yachay"] .legend i{border:1px solid rgba(43,82,130,.18)}
   [data-theme="yachay"] .yachay-wordmark{display:inline-flex}
   .yachay-wordmark{display:none;align-items:center;gap:7px;color:#D4AF37;font-family:"Cinzel",Georgia,serif;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
-  .yachay-wordmark small{color:#C28B77;font-family:"Montserrat",Calibri,sans-serif;font-size:9px;font-weight:800;letter-spacing:.12em}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 "Segoe UI",system-ui,sans-serif}
-  button{font-family:inherit;cursor:pointer}
+  .yachay-wordmark small{color:#C28B77;font-family:"Montserrat",Calibri,-apple-system,system-ui,sans-serif;font-size:12px;font-weight:800;letter-spacing:.12em}
+
+  /* ===== GLOBAL RESET & TOUCH ===== */
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 "Segoe UI",system-ui,-apple-system,sans-serif}
+  button{font-family:inherit;cursor:pointer;touch-action:manipulation}
+  input,select{touch-action:manipulation}
   .hidden{display:none!important}
 
+  /* ===== FOCUS VISIBLE ===== */
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+  /* ===== REDUCED MOTION ===== */
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  }
+
   #gate{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:20}
-  .gate-card{width:min(360px,90vw);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:28px;text-align:center}
+  .gate-card{width:min(360px,90vw);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:28px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.10)}
   .gate-card h1{font-size:18px;margin:0 0 4px}.gate-card p{color:var(--soft);font-size:13px;margin:0 0 16px}
   .gate-card input{width:100%;padding:11px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:16px;text-align:center}
-  .gate-card button{width:100%;margin-top:10px;padding:11px;border:none;border-radius:6px;background:var(--accent);color:var(--accent-tx);font-weight:700}
+  .gate-card button{width:100%;margin-top:10px;padding:11px;border:none;border-radius:6px;background:var(--accent);color:var(--accent-tx);font-weight:700;touch-action:manipulation}
+  .gate-card button:active{transform:scale(.98);filter:brightness(.94)}
   .gate-err{color:var(--high-tx);font-size:13px;margin-top:8px;min-height:16px}
 
   header{display:flex;gap:14px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -79,43 +91,49 @@
   header .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   header .patient-toolbar{padding-right:6px}
   header .export-toolbar{justify-content:flex-end}
-  header select,header button.act{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:13px;min-height:36px}
+  /* font-size 16px to prevent iOS Safari auto-zoom on focus */
+  header select,header button.act{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:16px;min-height:44px;touch-action:manipulation}
+  header button.act:active{transform:scale(.98);background:var(--line)}
   header .spacer{flex:1}
   .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
-  .seg button{background:var(--panel2);color:var(--soft);border:none;padding:8px 14px;font-size:13px}
+  .seg button{background:var(--panel2);color:var(--soft);border:none;padding:8px 14px;font-size:14px;min-height:44px;touch-action:manipulation;user-select:none}
   .seg button.on{background:var(--accent);color:var(--accent-tx);font-weight:700}
+  .seg button:active{filter:brightness(.92)}
 
   .wrap{display:grid;grid-template-columns:1fr 372px;gap:16px;padding:18px;align-items:start}
   @media(max-width:900px){.wrap{grid-template-columns:1fr}}
   @media(min-width:901px){.side-panel{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto}}
   @media(max-width:720px){header{gap:8px}.toolbar{width:100%}header .export-toolbar{justify-content:flex-start}header select{flex:1 1 180px}header button.act{flex:1 1 auto}.seg{width:100%}.seg button{flex:1}}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
   .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin:0 0 4px}
   .card .sub{font-size:12px;color:var(--faint);margin:0 0 12px}
   .map-head{display:grid;grid-template-columns:minmax(220px,1fr) minmax(260px,420px);gap:14px;align-items:start;margin-bottom:12px}
   .map-head .sub{margin:0}
   .map-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
-  .map-filter-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:800}
-  .map-filter{background:var(--panel2);color:var(--soft);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700}
+  .map-filter-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:800}
+  .map-filter{background:var(--panel2);color:var(--soft);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700;min-height:36px;touch-action:manipulation;user-select:none}
+  .map-filter:hover{border-color:var(--accent)}
+  .map-filter:active{transform:scale(.97);filter:brightness(.94)}
   .map-filter.on{background:var(--accent);border-color:var(--accent);color:var(--accent-tx)}
   .filtered-out{display:none!important}
-  .item-progress{background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:9px 10px}
+  .item-progress{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
   .item-progress-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:7px}
-  .item-progress-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:800}
+  .item-progress-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:800}
   .item-progress-count{font-size:13px;font-weight:900;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
   .item-progress-track{height:8px;background:var(--track);border-radius:999px;overflow:hidden}
   .item-progress-track i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--sv-low),var(--accent))}
-  .item-progress-meta{display:flex;justify-content:space-between;gap:10px;margin-top:6px;color:var(--soft);font-size:11px;font-variant-numeric:tabular-nums}
+  .item-progress-meta{display:flex;justify-content:space-between;gap:10px;margin-top:6px;color:var(--soft);font-size:12px;font-variant-numeric:tabular-nums}
   .muted{color:var(--soft);font-size:13px}
   .app-note{font-size:12px;color:var(--faint);margin:0 18px}
   @media(max-width:720px){.map-head{grid-template-columns:1fr}.item-progress{min-width:0}}
 
-  .rowlabels{display:grid;grid-template-columns:repeat(3,1fr);font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+  .rowlabels{display:grid;grid-template-columns:repeat(3,1fr);font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
   .rowlabels span:nth-child(2){text-align:center}.rowlabels span:nth-child(3){text-align:right}
   .map{overflow-x:auto;padding-bottom:4px}
   .row{display:flex;gap:6px;margin-bottom:6px;align-items:flex-start}
-  .node{border:1px solid var(--line);border-radius:6px;padding:8px 10px;color:var(--text);background:var(--bg2);font-weight:600;font-size:12px;line-height:1.2;width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:6px;transition:filter .12s,transform .12s}
+  .node{border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--text);background:var(--bg2);font-weight:600;font-size:12px;line-height:1.2;width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:6px;transition:filter .12s,transform .12s;touch-action:manipulation;user-select:none;box-shadow:0 1px 4px rgba(0,0,0,.05)}
   .node:hover{filter:brightness(.99);transform:translateY(-1px)}
+  .node:active{transform:scale(.98);filter:brightness(.94)}
   .node-title{display:flex;align-items:center;gap:6px;width:100%;justify-content:flex-start;min-width:0}
   .node-label{text-align:left;min-width:0}
   .node.level-top{align-items:center}
@@ -125,7 +143,12 @@
   .sevbar-wrap{display:flex;align-items:center;gap:8px;width:100%}
   .sevbar{flex:1;height:5px;background:var(--track);border-radius:999px;overflow:hidden}
   .sevbar i{display:block;height:100%;border-radius:999px}
-  .sevnum{font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--soft);white-space:nowrap}
+  /* sevnum now includes accessible text label when data exists — rendered via JS */
+  .sevnum{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--soft);white-space:nowrap}
+  .sev-label{font-size:12px;font-weight:700;white-space:nowrap}
+  .sev-label.sev-high-label{color:var(--sv-high)}
+  .sev-label.sev-mid-label{color:var(--sv-mid)}
+  .sev-label.sev-low-label{color:var(--sv-low)}
   .node.sel{outline:2px solid var(--accent);outline-offset:1px}
   .band{flex:1}.spectrum{min-height:52px;flex:1 1 0;justify-content:space-between}.spacer{flex-basis:0}
   .col{flex:1 1 130px;min-width:130px;display:flex;flex-direction:column;gap:6px}
@@ -138,43 +161,48 @@
   .subnode{min-height:36px}
   .rb-sym{background:var(--panel2)}
   .dis-block{display:flex;flex-direction:column;gap:2px}
-  .dis{font-size:9.5px;color:var(--soft);line-height:1.25}
+  .dis{font-size:12px;color:var(--soft);line-height:1.25}
   .hgrid{display:grid;gap:8px 4px;align-items:stretch}
   .hgrid>div{min-width:0;display:flex;flex-direction:column}
-  .rowlab{justify-content:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--faint);padding-right:8px;border-right:1px solid var(--line);text-align:right}
+  .rowlab{justify-content:center;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--faint);padding-right:8px;border-right:1px solid var(--line);text-align:right}
   .hgrid .rail-block{flex:1}
   .hgrid .facet-rail{gap:4px}
-  .rail-block{margin-top:4px;background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:6px 5px}
-  .rail-cap{font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-bottom:5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rail-block{margin-top:4px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:6px 5px}
+  .rail-cap{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-bottom:5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .facet-rail{display:flex;flex-direction:column;gap:4px}
   .trans-rail{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:6px}
-  .hchip{display:flex;align-items:center;gap:6px;cursor:pointer;padding:2px 4px;border-radius:3px}
+  .hchip{display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 4px;border-radius:3px;min-height:32px;touch-action:manipulation;user-select:none}
   .hchip:hover{background:var(--panel2)}
+  .hchip:active{transform:scale(.98);background:var(--line)}
   .hchip.sel{outline:1.5px solid var(--accent)}
   .done-dot{width:12px;height:12px;border:1.4px solid var(--faint);border-radius:999px;display:grid;place-items:center;flex:0 0 12px;color:transparent;font-size:8px;font-weight:900;line-height:1}
   .done-dot.done{background:var(--sv-low);border-color:var(--sv-low);color:#fff}
   .node-dot{width:9px;height:9px;border:1.5px solid var(--faint);border-radius:999px;display:inline-block;flex:0 0 9px}
   .node-dot.done{background:var(--sv-low);border-color:var(--sv-low)}
-  .hlabel{font-size:10px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;max-width:44%}
+  .hlabel{font-size:12px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;max-width:44%}
   .hbar{flex:1;height:7px;background:var(--track);border-radius:999px;overflow:hidden;min-width:24px}
   .hbar i{display:block;height:100%;border-radius:999px}
-  .fcol{display:flex;flex-direction:column;align-items:center;gap:3px;flex:0 0 auto;cursor:pointer;padding:1px;border-radius:3px}
+  /* fcol / fmeter: horizontal layout with label beside bar for readability */
+  .fcol{display:flex;flex-direction:row;align-items:center;gap:5px;flex:0 0 auto;cursor:pointer;padding:2px 3px;border-radius:3px;touch-action:manipulation;user-select:none}
   .fcol:hover{background:var(--panel2)}
+  .fcol:active{transform:scale(.97);background:var(--line)}
   .fcol.sel{outline:2px solid var(--accent)}
-  .fmeter{width:5px;height:26px;background:var(--track);border-radius:999px;overflow:hidden;display:flex;align-items:flex-end;flex:0 0 auto}
-  .fmeter i{display:block;width:100%;border-radius:999px}
-  .flabel{writing-mode:vertical-rl;transform:rotate(180deg);font-size:8.5px;color:var(--soft);white-space:nowrap;height:62px;overflow:hidden;text-overflow:ellipsis}
+  .fmeter{width:28px;height:7px;background:var(--track);border-radius:999px;overflow:hidden;display:flex;align-items:center;flex:0 0 auto}
+  .fmeter i{display:block;height:100%;border-radius:999px}
+  .flabel{writing-mode:horizontal-tb;transform:none;font-size:12px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:72px}
   .ctx-band{border:1px dashed var(--line);border-radius:6px;padding:8px;margin-bottom:6px}
-  .ctx-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:6px}
+  .ctx-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:6px}
   .ctx-band .row{margin-bottom:0}
   .sev-none{background:var(--track)}
   .sev-low{background:var(--sv-low)}.sev-mid{background:var(--sv-mid)}.sev-high{background:var(--sv-high)}
+  /* Legend with accessible symbols */
   .legend{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;font-size:12px;color:var(--faint)}
   .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .legend-sym{font-size:11px;margin-right:3px;font-style:normal}
 
   .pheader{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;gap:8px}
-  .pheader .pc{font-size:19px;font-weight:800}
-  .kind{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+  .pheader .pc{font-size:19px;font-weight:800;font-family:"Cinzel",Georgia,serif}
+  .kind{font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
   .scale{padding:9px 0;border-bottom:1px solid var(--line)}.scale:last-child{border-bottom:none}
   .scale .top{display:flex;justify-content:space-between;gap:8px;align-items:center}
   .scale .nm{font-weight:600}.scale .val{color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -189,9 +217,11 @@
   .empty{color:var(--faint);font-size:13px;padding:8px 0}
   .smart-empty{margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:8px;background:var(--panel2);color:var(--soft);font-size:13px;line-height:1.45}
   .smart-empty strong{display:block;color:var(--text);font-size:14px;margin-bottom:2px}
-  .do-btn{background:var(--accent);color:var(--accent-tx);border:none;border-radius:6px;padding:9px 14px;font-size:13px;font-weight:700}
-  .do-btn:hover{filter:brightness(1.06)}.do-btn.wide{width:100%}.do-btn.sm{padding:6px 11px;font-size:12px}
-  .ghost{background:transparent;color:var(--soft);border:1px solid var(--line);border-radius:6px;padding:9px 14px;font-size:13px}
+  .do-btn{background:var(--accent);color:var(--accent-tx);border:none;border-radius:8px;padding:9px 14px;font-size:14px;font-weight:700;touch-action:manipulation;user-select:none}
+  .do-btn:hover{filter:brightness(1.06)}.do-btn:active{transform:scale(.97);filter:brightness(.92)}
+  .do-btn.wide{width:100%}.do-btn.sm{padding:7px 12px;font-size:13px}
+  .ghost{background:transparent;color:var(--soft);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:13px;touch-action:manipulation}
+  .ghost:active{transform:scale(.97);background:var(--line)}
   .plan-card{transition:opacity .5s ease,transform .5s ease,filter .5s ease}
   .plan-card.locked{opacity:.45;filter:grayscale(.6);pointer-events:none;transform:scale(.98)}
   .plan-card.unlocked{opacity:1;filter:none;pointer-events:auto;transform:scale(1)}
@@ -200,26 +230,118 @@
   @keyframes planUnlock{0%{opacity:0;transform:scale(.92) translateY(8px)}100%{opacity:1;transform:scale(1) translateY(0)}}
   .plan-check{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:999px;background:var(--sv-low);color:#fff;font-size:11px;font-weight:900;margin-left:6px}
 
-  /* Administracion: un item por pantalla grande */
+  /* ===== ADMIN MODAL ===== */
   #modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:30;padding:16px}
-  .admin-card{width:min(640px,96vw);max-height:94vh;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:26px}
+  .admin-card{width:min(640px,96vw);max-height:94vh;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px;box-shadow:0 8px 40px rgba(0,0,0,.22)}
   .admin-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
   .admin-heading{flex:1;min-width:0}
   .admin-title{font-size:18px;font-weight:800}
-  .admin-instr{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;background:var(--panel2);color:var(--text);font-size:14px;font-weight:800;line-height:1.35}
-  .admin-instr-label{display:block;margin-bottom:3px;color:var(--accent);font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
-  .x{background:transparent;border:none;color:var(--soft);font-size:16px;cursor:pointer}
-  .admin-prog{height:6px;background:var(--panel2);border-radius:999px;margin:16px 0 6px;overflow:hidden}
-  .admin-prog div{height:100%;background:var(--accent);transition:width .2s}
-  .admin-count{font-size:12px;color:var(--faint);margin-bottom:10px}
-  .admin-q{font-size:21px;font-weight:600;line-height:1.32;margin:10px 0 22px}
+  /* Instruction: collapsible after first answer */
+  .admin-instr{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;background:var(--panel2);color:var(--text);font-size:14px;font-weight:800;line-height:1.35;cursor:pointer}
+  .admin-instr.collapsed{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;padding-top:7px;padding-bottom:7px}
+  .admin-instr.collapsed .admin-instr-label{display:none}
+  .admin-instr-label{display:block;margin-bottom:3px;color:var(--accent);font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+  .x{background:transparent;border:none;color:var(--soft);font-size:20px;cursor:pointer;touch-action:manipulation;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px}
+  .x:hover{background:var(--panel2);color:var(--text)}
+  .x:active{transform:scale(.93)}
+  .admin-prog{height:11px;background:var(--panel2);border-radius:999px;margin:16px 0 6px;overflow:hidden}
+  .admin-prog div{height:100%;background:var(--accent);transition:width .35s cubic-bezier(.4,0,.2,1)}
+  .admin-count{font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px}
+  .admin-q{font-size:27px;font-weight:600;line-height:1.32;margin:10px 0 22px}
   .admin-opts{display:flex;flex-direction:column;gap:10px}
-  .opt{text-align:left;padding:15px 18px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font-size:15px;transition:filter .12s,border-color .12s}
+  /* Item transition animation */
+  .admin-item-area{transition:opacity .18s ease,transform .18s ease}
+  .admin-item-area.exiting{opacity:0;transform:translateX(-18px)}
+  .admin-item-area.entering{opacity:0;transform:translateX(14px)}
+  .opt{text-align:left;padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font-size:17px;min-height:56px;transition:filter .12s,border-color .12s,transform .12s;touch-action:manipulation;user-select:none}
   .opt:hover{border-color:var(--accent)}
+  .opt:active{transform:scale(.98);filter:brightness(.94)}
   .opt.on{background:var(--accent);color:var(--accent-tx);border-color:var(--accent);font-weight:700}
-  .admin-shortcuts{margin-top:12px;font-size:11px;color:var(--faint);text-align:center}
+  .admin-shortcuts{margin-top:12px;font-size:12px;color:var(--faint);text-align:center}
   .admin-nav{display:flex;align-items:center;gap:12px;margin-top:22px}
   .admin-nav .muted{flex:1;text-align:center}
+
+  /* ===== SCALE COMPLETION CELEBRATION ===== */
+  .admin-complete{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;gap:16px}
+  .admin-complete-check{width:72px;height:72px}
+  .admin-complete-check circle{fill:none;stroke:var(--sv-low);stroke-width:4}
+  .admin-complete-check path{fill:none;stroke:var(--sv-low);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:52;stroke-dashoffset:52;animation:checkDraw .5s .2s cubic-bezier(.4,0,.2,1) forwards}
+  @keyframes checkDraw{to{stroke-dashoffset:0}}
+  @media(prefers-reduced-motion:reduce){.admin-complete-check path{animation:none;stroke-dashoffset:0}}
+  .admin-complete h2{font-size:21px;font-weight:800;margin:0;color:var(--text)}
+  .admin-complete .admin-complete-meta{font-size:14px;color:var(--soft);margin:0}
+
+  /* ===== CLOSE CONFIRM DIALOG ===== */
+  .admin-exit-confirm{margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);display:flex;flex-direction:column;gap:10px}
+  .admin-exit-confirm p{margin:0;font-size:14px;color:var(--text);font-weight:600}
+  .admin-exit-confirm .confirm-btns{display:flex;gap:10px}
+
+  /* ===== RADAR ESPECTROS ===== */
+  .radar-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.07);margin-bottom:14px}
+  .radar-card-title{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);font-weight:800;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .radar-card-title .pfactor-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accent);color:var(--accent-tx);letter-spacing:.04em}
+  .radar-svg-wrap{width:100%;aspect-ratio:1/1;max-width:320px;margin:0 auto;display:block}
+  .radar-svg-wrap svg{width:100%;height:100%;display:block;overflow:visible}
+  @keyframes radarFadeIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+  .radar-poly{animation:radarFadeIn .45s cubic-bezier(.4,0,.2,1) forwards}
+  @media(prefers-reduced-motion:reduce){.radar-poly{animation:none}}
+  .radar-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:11px;color:var(--faint)}
+  .radar-legend-item{display:flex;align-items:center;gap:4px}
+  .radar-legend-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+
+  /* ===== ELEVACIONES CARD ===== */
+  .elev-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:14px}
+  .elev-card-title{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);font-weight:800;margin:0 0 12px}
+  .elev-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
+  .elev-row:last-child{border-bottom:none}
+  .elev-glyph{font-size:13px;flex:0 0 16px;text-align:center}
+  .elev-glyph.sev-high-glyph{color:var(--sv-high)}
+  .elev-glyph.sev-mid-glyph{color:var(--sv-mid)}
+  .elev-glyph.sev-low-glyph{color:var(--sv-low)}
+  .elev-name{font-size:13px;font-weight:600;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .elev-bar-wrap{flex:0 0 72px}
+  .elev-bar{height:6px;background:var(--track);border-radius:999px;overflow:hidden}
+  .elev-bar i{display:block;height:100%;border-radius:999px}
+  .elev-pct{font-size:14px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--text);flex:0 0 36px;text-align:right}
+  .elev-empty{color:var(--faint);font-size:13px;padding:6px 0;text-align:center;border:1px dashed var(--line);border-radius:8px;background:var(--panel2);margin-top:4px}
+
+  /* ===== SNAPSHOT DASHBOARD MEJORADO ===== */
+  .snap-header{padding:24px 28px 20px;background:var(--panel);border-bottom:2px solid var(--line);display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap}
+  .snap-header-main{flex:1 1 260px;min-width:0}
+  .snap-title{font-size:22px;font-weight:800;font-family:"Cinzel",Georgia,serif;letter-spacing:.03em;color:var(--accent);margin:0 0 4px}
+  .snap-subject{font-size:15px;font-weight:700;color:var(--text);margin:0 0 2px}
+  .snap-meta-row{font-size:12px;color:var(--soft);line-height:1.5;margin:0}
+  .snap-badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--mid);color:var(--mid-tx);letter-spacing:.05em;margin-top:6px}
+  .snap-header-right{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+  .snap-completeness{font-size:12px;color:var(--faint);text-align:right}
+  .snap-body{padding:20px 24px;display:grid;gap:20px;grid-template-columns:1fr 1fr}
+  @media(max-width:700px){.snap-body{grid-template-columns:1fr}}
+  .snap-section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .snap-section h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);margin:0 0 12px;font-weight:800}
+  .snap-radar-section{grid-column:1/-1}
+  .snap-elev-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .snap-elev-row:last-child{border-bottom:none}
+  .snap-elev-glyph{font-size:14px;flex:0 0 18px;text-align:center}
+  .snap-elev-glyph.sh{color:var(--sv-high)}.snap-elev-glyph.sm{color:var(--sv-mid)}.snap-elev-glyph.sl{color:var(--sv-low)}
+  .snap-elev-name{font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .snap-elev-domain{font-size:11px;color:var(--faint);margin-left:2px}
+  .snap-elev-bar-wrap{flex:0 0 80px}
+  .snap-elev-bar{height:7px;background:var(--track);border-radius:999px;overflow:hidden}
+  .snap-elev-bar i{display:block;height:100%;border-radius:999px}
+  .snap-elev-pct{font-size:15px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--text);flex:0 0 40px;text-align:right}
+  .snap-footer{padding:14px 24px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);text-align:center;line-height:1.5}
+  @media print{
+    body{background:#fff !important;color:#000 !important}
+    .snap-header{background:#fff !important;border-bottom:2px solid #000 !important;padding:18px 22px 14px !important}
+    .snap-title{color:#000 !important}
+    .snap-section,.elev-card,.radar-card{box-shadow:none !important;border:1px solid #ccc !important;break-inside:avoid}
+    .snap-body{display:block}
+    .snap-section{margin-bottom:14px}
+    .snap-radar-section{display:block}
+    .snap-footer{border-top:1px solid #ccc !important}
+    @page{size:A4 portrait;margin:18mm 14mm}
+    .do-btn,.ghost,[data-do]{display:none !important}
+  }
 </style>
 </head>
 <body>
@@ -277,9 +399,11 @@
         <button class="map-filter" data-map-filter="pending" aria-pressed="false">Pendientes</button>
       </div>
       <div class="map" id="map" role="region" aria-label="Mapa dimensional interactivo"></div>
-      <div class="legend">
-        <span><i class="sev-none"></i>sin evaluar</span><span><i class="sev-low"></i>baja</span>
-        <span><i class="sev-mid"></i>media</span><span><i class="sev-high"></i>alta</span>
+      <div class="legend" aria-label="Leyenda de severidad">
+        <span><i class="sev-none"></i><i class="legend-sym" aria-hidden="true">·</i>sin evaluar</span>
+        <span><i class="sev-low"></i><i class="legend-sym" aria-hidden="true">●</i>baja</span>
+        <span><i class="sev-mid"></i><i class="legend-sym" aria-hidden="true">◆</i>media</span>
+        <span><i class="sev-high"></i><i class="legend-sym" aria-hidden="true">▲</i>alta</span>
       </div>
     </section>
     <aside class="card side-panel" id="panel" aria-live="polite" aria-label="Panel clinico"></aside>
@@ -1278,7 +1402,7 @@ function scalePrompt(sc,detail){
 }
 function adminInstructionHTML(instr){
   const text=String(instr||"").trim()||DEFAULT_ADMIN_INSTR;
-  return `<div class="admin-instr" id="adminInstr"><span class="admin-instr-label">Periodo / consigna</span><span>${escapeHTML(text)}</span></div>`;
+  return `<span class="admin-instr-label">Periodo / consigna</span><span>${escapeHTML(text)}</span>`;
 }
 function subsetBank(src,subName,idxs,maxEach,label){
   const sc=SCALES[src];
@@ -1412,16 +1536,20 @@ function nodeCompleted(key){
   if(PID5_FACETS.some(f=>f.spectrum===key)) return PID5_FACETS.some(f=>f.spectrum===key && p.pid5&&p.pid5[f.name]);
   return false;
 }
+function sevSymbol(level){return level==="high"?"▲":level==="mid"?"◆":level==="low"?"●":"";}
+function sevLabelText(level){return level==="high"?"Alto":level==="mid"?"Medio":level==="low"?"Bajo":"";}
 function nodeHTML(dataKey,cls,label,sc,style){
   const sel=selected===dataKey?"sel":"";
   const cap=nodeCapability(dataKey), done=nodeCompleted(dataKey);
   const showScore=!["fear","mania"].includes(dataKey);
-  const scoreLabel=showScore?(sc.has?`${sc.pct}/100`:"sin datos"):"sin puntaje directo";
+  const scoreLabel=showScore?(sc.has?`${sc.pct}/100 · ${sevLabelText(sc.level)}`:"sin datos"):"sin puntaje directo";
   const scoreState=sc.has?(sc.level==="high"?"elevated":"measured"):"pending";
+  const sym=sc.has?sevSymbol(sc.level):"";
+  const sevTxt=sc.has?`<span class="sev-label sev-${sc.level}-label" aria-label="${sevLabelText(sc.level)}">${sym}</span>`:"";
   return `<button class="node ${cls} ${sel}" data-node="${dataKey}" data-score-state="${scoreState}" aria-label="${escapeHTML(label+" · "+scoreLabel)}" ${style?`style="${style}"`:""}>
     <span class="node-title">${showScore&&cap?`<span class="node-dot ${done?"done":""}" title="${done?"Dato registrado":"Escala/seccion disponible"}"></span>`:""}<span class="node-label">${label}</span></span>
     ${showScore?`<span class="sevbar-wrap"><span class="sevbar"><i class="${levelClass(sc.level,sc.has)}" style="width:${sc.has?sc.pct:0}%"></i></span>
-    <span class="sevnum">${sc.has?sc.pct+"/100":"s/d"}</span></span>`:""}</button>`;
+    ${sevTxt}<span class="sevnum">${sc.has?sc.pct+"/100":"s/d"}</span></span>`:""}</button>`;
 }
 function formItemCount(sc){
   if(!sc)return 0;
@@ -2386,11 +2514,13 @@ function chip(kind,name,sc,tip){
 function nodeBtn(key,cls,label,style){
   const s=score(key),sel=selected===key?"sel":"";
   const num = s.has ? (isTransdiagnosticScale(key) ? `${s.raw}/${s.max}` : `${s.pct}/100`) : "s/d";
+  const sym=s.has?sevSymbol(s.level):"";
+  const sevTxt=s.has?`<span class="sev-label sev-${s.level}-label" aria-label="${sevLabelText(s.level)}">${sym}</span>`:"";
   return `<button class="node ${cls} ${sel}" data-node="${key}" ${style?`style="${style}"`:""}>
     <span class="node-label">${label}</span>
     <span class="sevbar-wrap">
       <span class="sevbar"><i class="${levelClass(s.level,s.has)}" style="width:${s.has?s.pct:0}%"></i></span>
-      <span class="sevnum">${num}</span>
+      ${sevTxt}<span class="sevnum">${num}</span>
     </span></button>`;
 }
 function renderMap(){
@@ -2617,6 +2747,164 @@ function symDetailHTML(s){
 function rowHTML(k){const s=score(k),sc=BHITOP_SCALES.find(x=>x.key===k);return `<div class="scale"><div class="top"><span class="nm">${LABELS[k]}</span><span class="val">${scoreText(s)}</span></div>
   <div class="bar"><i class="${levelClass(s.level,s.has)}" style="width:${s.has?s.pct:0}%"></i></div>
   ${sc?`<div style="margin-top:7px"><button class="do-btn sm" data-do="bhitopscale:${k}">${s.has?"Repetir":"Hacer"} solo ${sc.codes.length} items</button></div>`:""}</div>`;}
+
+/* ===================== Radar espectros ===================== */
+// Short display names for radar labels
+const SPECTRA_SHORT={
+  internalizing:"Internaliz.",somatoform:"Somatof.",thought:"Pensam.",
+  detachment:"Detacham.",neuro:"Neurodev.",disinhibited:"Desinhibic.",antagonistic:"Antagonis."
+};
+// The 6 primary HiTOP spectra (excluding neuro/external composites) for the radar
+const RADAR_SPECTRA=["internalizing","somatoform","thought","detachment","disinhibited","antagonistic"];
+
+function spectraRadarData(){
+  const pf=score("pfactor");
+  const spData=RADAR_SPECTRA.map(k=>{
+    const s=score(k);
+    return {key:k,label:SPECTRA_SHORT[k]||k,pct:s.has?s.pct:null,level:s.has?s.level:null,has:s.has};
+  });
+  return {spectra:spData,pfactor:pf.has?{pct:pf.pct,level:pf.level}:null};
+}
+
+function buildRadarSVGMarkup(radarData,opts){
+  opts=opts||{};
+  const N=radarData.spectra.length; // 6
+  const cx=150,cy=150,r=100; // viewBox 300x300, centre 150,150, radius 100
+  const angleStep=(2*Math.PI)/N;
+  // SVG vertex for percentile pct (0-100) at index i
+  function vertex(i,pct){
+    const angle=-Math.PI/2+i*angleStep;
+    const d=(pct/100)*r;
+    return [cx+d*Math.cos(angle),cy+d*Math.sin(angle)];
+  }
+  // Reference ring points
+  function ringPath(pct){
+    const pts=Array.from({length:N},(_,i)=>vertex(i,pct));
+    return pts.map((p,i)=>(i===0?"M":"L")+p[0].toFixed(2)+","+p[1].toFixed(2)).join(" ")+"Z";
+  }
+  // Outer axis lines
+  const axisLines=Array.from({length:N},(_,i)=>{
+    const [x,y]=vertex(i,100);
+    return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(2)}" y2="${y.toFixed(2)}" stroke="currentColor" stroke-opacity="0.14" stroke-width="1"/>`;
+  }).join("");
+  // Reference rings at 25, 50, 75
+  const rings=[25,50,75].map(pct=>`<path d="${ringPath(pct)}" fill="none" stroke="currentColor" stroke-opacity="${pct===50?0.22:0.11}" stroke-width="${pct===50?1.2:0.8}" stroke-dasharray="${pct===50?"":"3,3"}"/>`).join("");
+  // Polygon of measured data (use 0 for no data)
+  const polyPts=radarData.spectra.map((sp,i)=>vertex(i,sp.has?sp.pct:0));
+  const polyPath=polyPts.map((p,i)=>(i===0?"M":"L")+p[0].toFixed(2)+","+p[1].toFixed(2)).join(" ")+"Z";
+  // CSS var colours — use inline style vars that work in both SVG and export
+  const accentFill="var(--accent)";
+  const svHighCol="var(--sv-high)";
+  const svMidCol="var(--sv-mid)";
+  const svLowCol="var(--sv-low)";
+  const faintCol="var(--faint)";
+  const textCol="var(--text)";
+  // Dots at vertices coloured by severity
+  function dotColor(level){
+    if(level==="high")return svHighCol;
+    if(level==="mid")return svMidCol;
+    return svLowCol;
+  }
+  function dotGlyph(level){
+    return level==="high"?"▲":level==="mid"?"◆":"●";
+  }
+  const dots=radarData.spectra.map((sp,i)=>{
+    const [x,y]=vertex(i,sp.has?sp.pct:0);
+    if(!sp.has)return "";
+    const col=dotColor(sp.level);
+    return `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="5" fill="${col}" stroke="var(--panel)" stroke-width="1.5"/>`;
+  }).join("");
+  // Labels outside the radar
+  const labelPad=16;
+  const labels=radarData.spectra.map((sp,i)=>{
+    const angle=-Math.PI/2+i*angleStep;
+    const d=r+labelPad;
+    const lx=cx+d*Math.cos(angle);
+    const ly=cy+d*Math.sin(angle);
+    // Text anchor based on angle
+    let anchor="middle";
+    const deg=((angle*180/Math.PI)+360)%360;
+    if(deg>30&&deg<150)anchor="middle";
+    else if(deg>=150&&deg<=210)anchor="end";
+    else if(deg>210&&deg<330)anchor="middle";
+    else anchor="start";
+    // Adjust: left side => end, right side => start
+    if(Math.cos(angle)>0.3)anchor="start";
+    else if(Math.cos(angle)<-0.3)anchor="end";
+    const noData=!sp.has;
+    const pctLabel=sp.has?` ${sp.pct}`:"";
+    const glyphLabel=sp.has?dotGlyph(sp.level):"";
+    const glyphColor=sp.has?dotColor(sp.level):faintCol;
+    return `<text x="${lx.toFixed(2)}" y="${(ly-5).toFixed(2)}" text-anchor="${anchor}" font-size="11" font-family="inherit" fill="${noData?faintCol:textCol}" font-weight="${sp.has?"700":"400"}" opacity="${noData?0.5:1}">${escapeHTML(sp.label)}</text>
+    ${sp.has?`<text x="${lx.toFixed(2)}" y="${(ly+7).toFixed(2)}" text-anchor="${anchor}" font-size="10" font-family="inherit" fill="${glyphColor}" font-weight="700">${glyphLabel}${pctLabel}</text>`:`<text x="${lx.toFixed(2)}" y="${(ly+7).toFixed(2)}" text-anchor="${anchor}" font-size="9" font-family="inherit" fill="${faintCol}">s/d</text>`}`;
+  }).join("");
+  // Factor P badge at top centre
+  let pfBadge="";
+  if(radarData.pfactor){
+    const pf=radarData.pfactor;
+    const pfCol=dotColor(pf.level);
+    pfBadge=`<text x="${cx}" y="${cy-6}" text-anchor="middle" font-size="11" font-family="inherit" fill="${faintCol}" font-weight="700" letter-spacing="0.05em">FACTOR P</text>
+    <text x="${cx}" y="${cy+10}" text-anchor="middle" font-size="16" font-family="inherit" fill="${pfCol}" font-weight="900">${pf.pct}</text>
+    <text x="${cx}" y="${cy+22}" text-anchor="middle" font-size="9" font-family="inherit" fill="${faintCol}">/100</text>`;
+  } else {
+    pfBadge=`<text x="${cx}" y="${cy+5}" text-anchor="middle" font-size="10" font-family="inherit" fill="${faintCol}" opacity="0.5">Factor P</text>
+    <text x="${cx}" y="${cy+17}" text-anchor="middle" font-size="9" font-family="inherit" fill="${faintCol}" opacity="0.4">s/d</text>`;
+  }
+  const animClass=opts.noAnim?"":"radar-poly";
+  return `<svg viewBox="0 0 300 300" role="img" aria-label="Radar de espectros HiTOP" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+  <g class="${animClass}">
+    ${axisLines}
+    ${rings}
+    <path d="${polyPath}" fill="${accentFill}" fill-opacity="0.18" stroke="${accentFill}" stroke-width="2" stroke-linejoin="round"/>
+    ${dots}
+  </g>
+  ${labels}
+  ${pfBadge}
+</svg>`;
+}
+
+function renderSpectraRadar(targetEl){
+  const data=spectraRadarData();
+  const anyData=data.spectra.some(s=>s.has)||data.pfactor;
+  const pfBadge=data.pfactor?`<span class="pfactor-badge">Factor P · ${data.pfactor.pct}/100</span>`:"";
+  targetEl.innerHTML=`<div class="radar-card" aria-label="Perfil de espectros HiTOP">
+  <div class="radar-card-title">Perfil de espectros ${pfBadge}</div>
+  <div class="radar-svg-wrap">${buildRadarSVGMarkup(data)}</div>
+  ${anyData?`<div class="radar-legend">${data.spectra.filter(s=>s.has).map(sp=>`<span class="radar-legend-item"><span class="radar-legend-dot" style="background:${{high:"var(--sv-high)",mid:"var(--sv-mid)",low:"var(--sv-low)"}[sp.level]||"var(--sv-low)"}"></span>${escapeHTML(sp.label)} ${sp.pct}</span>`).join("")}</div>`:"<div style='font-size:12px;color:var(--faint);margin-top:6px'>Sin datos de espectros aun. Completar B-HiTOP para ver el perfil.</div>"}
+  </div>`;
+}
+
+/* ===================== Elevaciones card ===================== */
+function elevationsData(n){
+  n=n||5;
+  const rows=dashboardClinicalRows();
+  return rows.slice(0,n);
+}
+
+function renderElevationsCard(targetEl,n){
+  const rows=elevationsData(n||5);
+  let inner="";
+  if(!rows.length){
+    inner=`<div class="elev-empty">Sin datos medidos aun. Completar escalas para ver elevaciones.</div>`;
+  } else {
+    inner=rows.map(r=>{
+      const sym=sevSymbol(r.level);
+      const glyphCls=r.level==="high"?"sev-high-glyph":r.level==="mid"?"sev-mid-glyph":"sev-low-glyph";
+      const barColor=r.level==="high"?"var(--sv-high)":r.level==="mid"?"var(--sv-mid)":"var(--sv-low)";
+      return `<div class="elev-row">
+  <span class="elev-glyph ${glyphCls}" aria-hidden="true">${sym}</span>
+  <span class="elev-name" title="${escapeHTML(r.name)} · ${escapeHTML(r.domain)}">${escapeHTML(r.name)}</span>
+  <span class="elev-bar-wrap"><div class="elev-bar"><i style="width:${r.pct}%;background:${barColor}"></i></div></span>
+  <span class="elev-pct" aria-label="${r.pct} de 100">${r.pct}</span>
+</div>`;
+    }).join("");
+  }
+  targetEl.innerHTML=`<div class="elev-card" aria-label="Elevaciones principales">
+  <div class="elev-card-title">Elevaciones principales</div>
+  ${inner}
+</div>`;
+}
+
 function renderPanel(){
   const el=document.getElementById("panel"), p=patient();
   if(!selected){
@@ -2632,8 +2920,14 @@ function renderPanel(){
     el.innerHTML=renderProgressBanner()+`<div class="pheader"><span class="pc">${p.code}</span></div>
       <button class="do-btn wide" data-do="${familyActionType("bhitop")}">${familyActionLabel("bhitop","B-HiTOP")}</button>
       <p class="muted" style="margin-top:10px">Clic en una dimension del mapa para detalle y para hacer su escala.</p>
+      <div id="panel-radar-wrap"></div>
+      <div id="panel-elev-wrap"></div>
       ${BHITOP_SCALES.map(s=>s.key).map(rowHTML).join("")}`;
     bindDo(el);
+    const radarWrap=el.querySelector("#panel-radar-wrap");
+    if(radarWrap)renderSpectraRadar(radarWrap);
+    const elevWrap=el.querySelector("#panel-elev-wrap");
+    if(elevWrap)renderElevationsCard(elevWrap,5);
     const resumeBtn=document.getElementById("resumeBtn");
     if(resumeBtn)resumeBtn.onclick=resumeAdmin;
     const discardBtn=document.getElementById("discardBtn");
@@ -2735,6 +3029,7 @@ function renderPanel(){
     <div class="kind">${composite?"Secundaria · compuesta del B-HiTOP":"Espectro primario · B-HiTOP"}</div>
     <div class="bar" style="margin-top:8px"><i class="${sevClass(s.pct,s.has)}" style="width:${s.pct}%"></i></div>
     ${scoreInterpretationHTML(s)}
+    ${selected==="pfactor"?`<div id="panel-radar-wrap-pf"></div><div id="panel-elev-wrap-pf"></div>`:""}
     ${scaleDef?`<button class="do-btn wide" style="margin-top:14px" data-do="bhitopscale:${selected}">${s.has?"Repetir":"Hacer"} solo ${label} (${items.length} items)</button>`:""}
     <button class="${scaleDef?"ghost":"do-btn wide"}" style="width:100%;margin-top:${scaleDef?8:14}px" data-do="${familyActionType("bhitop")}">${familyActionLabel("bhitop","B-HiTOP")}</button>
     ${ctx}
@@ -2745,6 +3040,12 @@ function renderPanel(){
         <div class="top"><span class="nm">${f.name}</span><span class="val">${fs.has?scoreText(fs):"s/d"}</span></div>
         <div class="bar"><i class="${levelClass(fs.level,fs.has)}" style="width:${fs.has?fs.pct:0}%"></i></div></div>`}).join("")}`;})()}`;
   bindDo(el); bindFacets(el);
+  if(selected==="pfactor"){
+    const radarWrapPf=el.querySelector("#panel-radar-wrap-pf");
+    if(radarWrapPf)renderSpectraRadar(radarWrapPf);
+    const elevWrapPf=el.querySelector("#panel-elev-wrap-pf");
+    if(elevWrapPf)renderElevationsCard(elevWrapPf,5);
+  }
 }
 
 /* ===================== Administracion (un item por pantalla) ===================== */
@@ -2829,51 +3130,122 @@ function adminScale(type){
   }
   renderModal();
 }
+let _adminInstrCollapsed=false;
+let _adminExitConfirmPending=false;
 function renderModal(){
   const host=document.getElementById("modal");
-  if(!administering){host.classList.add("hidden");host.innerHTML="";return;}
+  if(!administering){host.classList.add("hidden");host.innerHTML="";_adminInstrCollapsed=false;_adminExitConfirmPending=false;return;}
   host.classList.remove("hidden");
+  _adminExitConfirmPending=false;
   const A=administering, i=A.idx, total=A.items.length, cur=A.answers[i], done=Object.keys(A.answers).length;
   const currentOpts=A.itemOpts?A.itemOpts[i]:A.opts;
+  const instrCollapsed=_adminInstrCollapsed&&done>0;
+  const instrClass="admin-instr"+(instrCollapsed?" collapsed":"");
+  const instrTitle=instrCollapsed?"Toca para ver consigna completa":"";
   host.innerHTML=`<div class="admin-card" role="dialog" aria-modal="true" aria-labelledby="adminTitle" aria-describedby="adminInstr">
     <div class="admin-top">
-      <div class="admin-heading"><div class="admin-title" id="adminTitle">${A.title}</div>${adminInstructionHTML(A.instr)}</div>
+      <div class="admin-heading"><div class="admin-title" id="adminTitle">${A.title}</div>
+        <div class="${instrClass}" id="adminInstr" title="${escapeHTML(instrTitle)}" role="button" tabindex="0" aria-expanded="${!instrCollapsed}">${adminInstructionHTML(A.instr)}</div>
+      </div>
       <button class="x" data-x aria-label="Cerrar administracion">&#10005;</button>
     </div>
     <div class="admin-prog" role="progressbar" aria-label="Progreso de respuestas" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}"><div style="width:${Math.round(done/total*100)}%"></div></div>
-    <div class="admin-count" aria-live="polite">Item ${i+1} de ${total} · ${done}/${total} respondidos</div>
-    <div class="admin-q">${A.items[i]}</div>
-    <div class="admin-opts">${currentOpts.map((o,v)=>`<button class="opt ${cur===v?"on":""}" data-v="${v}" data-shortcut="${adminShortcutForOption(o,v)}" aria-pressed="${cur===v}">${o}</button>`).join("")}</div>
+    <div class="admin-count" aria-live="polite">Item ${i+1} de ${total} &nbsp;·&nbsp; ${done}/${total} respondidos</div>
+    <div class="admin-item-area" id="adminItemArea">
+      <div class="admin-q">${A.items[i]}</div>
+      <div class="admin-opts">${currentOpts.map((o,v)=>`<button class="opt ${cur===v?"on":""}" data-v="${v}" data-shortcut="${adminShortcutForOption(o,v)}" aria-pressed="${cur===v}">${o}</button>`).join("")}</div>
+    </div>
     <div class="admin-shortcuts">Atajos: numeros para responder · flechas para navegar · Esc para cerrar</div>
     <div class="admin-nav">
       <button class="ghost" data-back ${i===0?"disabled":""}>Atras</button>
       <span class="muted">${A.note?`<span style="color:var(--high-tx)">${A.note}</span>`:`${done}/${total} respondidos`}</span>
       ${i===total-1?`<button class="do-btn" data-finish>Calcular</button>`:`<button class="ghost" data-skip>Saltar</button>`}
     </div></div>`;
-  host.querySelector("[data-x]").onclick=()=>{saveAdminProgress();administering=null;renderModal();};
+  // Instruction collapse toggle
+  const instrEl=host.querySelector("#adminInstr");
+  if(instrEl){
+    instrEl.onclick=()=>{_adminInstrCollapsed=!_adminInstrCollapsed;renderModal();};
+    instrEl.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();instrEl.click();}};
+  }
+  // X button: show confirm if scale is in progress (has some but not all answers)
+  host.querySelector("[data-x]").onclick=()=>{
+    const hasProgress=done>0&&done<total;
+    if(hasProgress){showAdminExitConfirm(host);}
+    else{saveAdminProgress();administering=null;renderModal();}
+  };
   const back=host.querySelector("[data-back]"); if(back&&i>0)back.onclick=()=>{A.idx--;A.note="";saveAdminProgress();renderModal();};
   const skip=host.querySelector("[data-skip]"); if(skip)skip.onclick=()=>{if(i<total-1){A.idx++;A.note="";saveAdminProgress();renderModal();}};
   const fin=host.querySelector("[data-finish]"); if(fin)fin.onclick=finishAdmin;
   host.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
     selectAdminAnswer(+b.dataset.v);
   });
-  host.onclick=e=>{if(e.target===host){administering=null;renderModal();}};
+  // Click outside: same confirm logic
+  host.onclick=e=>{
+    if(e.target===host){
+      const doneCount=Object.keys(administering.answers).length, totalCount=administering.items.length;
+      const hasProgress=doneCount>0&&doneCount<totalCount;
+      if(hasProgress){showAdminExitConfirm(host);}
+      else{administering=null;renderModal();}
+    }
+  };
+}
+function showAdminExitConfirm(host){
+  if(_adminExitConfirmPending)return;
+  _adminExitConfirmPending=true;
+  const card=host.querySelector(".admin-card"); if(!card)return;
+  const confirm=document.createElement("div");
+  confirm.className="admin-exit-confirm";
+  confirm.innerHTML=`<p>¿Salir? Tu progreso queda guardado.</p>
+    <div class="confirm-btns">
+      <button class="ghost" data-confirm-stay>Continuar respondiendo</button>
+      <button class="do-btn" data-confirm-exit>Salir</button>
+    </div>`;
+  card.appendChild(confirm);
+  confirm.querySelector("[data-confirm-stay]").onclick=()=>{_adminExitConfirmPending=false;confirm.remove();};
+  confirm.querySelector("[data-confirm-exit]").onclick=()=>{saveAdminProgress();administering=null;renderModal();};
 }
 function adminShortcutForOption(option,index){
   const match=String(option||"").trim().match(/^(\d)/);
   return match?match[1]:String(index+1);
 }
+function animateAdminTransition(cb){
+  const area=document.getElementById("adminItemArea");
+  if(!area){cb();return;}
+  area.classList.add("exiting");
+  setTimeout(()=>{
+    cb();
+    // after re-render, animate in
+    const newArea=document.getElementById("adminItemArea");
+    if(newArea){
+      newArea.classList.add("entering");
+      requestAnimationFrame(()=>requestAnimationFrame(()=>newArea.classList.remove("entering")));
+    }
+  },200);
+}
 function selectAdminAnswer(value){
   if(!administering)return;
   const A=administering, i=A.idx, total=A.items.length;
   A.answers[i]=value; A.note="";
+  // Mark instruction as collapsed after first answer
+  if(Object.keys(A.answers).length>=1)_adminInstrCollapsed=true;
   saveAdminProgress();
-  if(i<total-1){A.idx++; setTimeout(renderModal,130);} else renderModal();
+  if(i<total-1){
+    A.idx++;
+    animateAdminTransition(()=>renderModal());
+  } else {
+    renderModal();
+  }
 }
 function handleAdminKey(e){
   if(!administering)return;
   if(e.key==="Escape"){
-    e.preventDefault();saveAdminProgress();administering=null;renderModal();return;
+    e.preventDefault();
+    const host=document.getElementById("modal");
+    const done=Object.keys(administering.answers).length, total=administering.items.length;
+    const hasProgress=done>0&&done<total;
+    if(hasProgress&&host){showAdminExitConfirm(host);}
+    else{saveAdminProgress();administering=null;renderModal();}
+    return;
   }
   if(e.key==="ArrowLeft"){
     e.preventDefault();if(administering.idx>0){administering.idx--;administering.note="";saveAdminProgress();renderModal();}return;
@@ -3048,9 +3420,31 @@ function finishAdmin(){
   }
   else{p.context=p.context||{};p.context.wsas=computeWSAS(WSAS.map((_,i)=>a[i]+1));}
   recomputeIDASFromResponses(p);
-  administering=null;renderModal();renderMap();renderPanel();
   savePatients();
   clearAdminProgress();
+  renderMap();renderPanel();
+  // Show completion celebration before closing modal
+  const completedTitle=A.title, completedTotal=total;
+  const b=batteryItemProgress();
+  const host=document.getElementById("modal");
+  if(host){
+    host.classList.remove("hidden");
+    host.innerHTML=`<div class="admin-card" role="dialog" aria-modal="true" aria-labelledby="adminCompleteTitle">
+      <div class="admin-complete">
+        <svg class="admin-complete-check" viewBox="0 0 72 72" aria-hidden="true">
+          <circle cx="36" cy="36" r="32"/>
+          <path d="M20 36 l11 11 l21 -21"/>
+        </svg>
+        <h2 id="adminCompleteTitle">Escala completada</h2>
+        <p class="admin-complete-meta">+${completedTotal} ítems &nbsp;·&nbsp; Llevas ${b.done} de ${b.total} del plan</p>
+        <button class="do-btn" id="adminCompleteContinue" style="min-width:160px">Continuar</button>
+      </div>
+    </div>`;
+    const continueBtn=host.querySelector("#adminCompleteContinue");
+    if(continueBtn) continueBtn.onclick=()=>{administering=null;renderModal();};
+  } else {
+    administering=null;renderModal();
+  }
 }
 
 /* ===================== CSV ===================== */
@@ -3132,6 +3526,20 @@ function dashboardSummaryHTML(subjectId,today){
     </div>
   </section>`;
 }
+function buildSnapElevationsHTML(rows){
+  if(!rows.length)return`<p style="font-size:13px;color:var(--faint);margin:0">Sin datos medidos.</p>`;
+  return rows.map(r=>{
+    const sym=r.level==="high"?"▲":r.level==="mid"?"◆":"●";
+    const glCls=r.level==="high"?"sh":r.level==="mid"?"sm":"sl";
+    const barCol=r.level==="high"?"var(--sv-high)":r.level==="mid"?"var(--sv-mid)":"var(--sv-low)";
+    return `<div class="snap-elev-row">
+  <span class="snap-elev-glyph ${glCls}" aria-hidden="true">${sym}</span>
+  <span class="snap-elev-name">${escapeHTML(r.name)}<span class="snap-elev-domain"> · ${escapeHTML(r.domain)}</span></span>
+  <span class="snap-elev-bar-wrap"><div class="snap-elev-bar"><i style="width:${r.pct}%;background:${barCol}"></i></div></span>
+  <span class="snap-elev-pct">${r.pct}</span>
+</div>`;
+  }).join("");
+}
 function exportDashboardHTML(){
   const prevSelected=selected, prevGuided=guidedMode;
   TRANSDIAGNOSTIC_SCALES.forEach(([k])=>hydrateTransdiagnosticDimensions(patient(),k));
@@ -3146,40 +3554,89 @@ function exportDashboardHTML(){
   const theme=document.documentElement.getAttribute("data-theme")||"claro";
   const initialKey=prevSelected&&panels[prevSelected]?prevSelected:"__summary";
   const selectedLabel=initialKey==="__summary"?"Resumen general":initialKey.replace(/^(facet:|sym:|dx:)/,"");
+  // Radar SVG (static string — CSS vars work in HTML export)
+  const radarData=spectraRadarData();
+  const radarSVG=buildRadarSVGMarkup(radarData,{noAnim:true});
+  const pfBadgeHTML=radarData.pfactor?`<span class="snap-badge" style="background:var(--accent);color:var(--accent-tx)">Factor P · ${radarData.pfactor.pct}/100</span>`:"";
+  // Top elevations for export (top 6)
+  const elevRows=dashboardClinicalRows().slice(0,6);
+  const b=batteryItemProgress();
   const html=`<!doctype html>
 <html lang="es" data-theme="${escapeHTML(theme)}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>HiTOP Dashboard · ${escapeHTML(subjectId)}</title>
+<title>HiTOP · ${escapeHTML(subjectId)} · ${escapeHTML(today)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 ${styleText}
-body{padding:0}
-.snapshot-top{padding:18px 24px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
-.snapshot-title{font-size:18px;font-weight:800;letter-spacing:.02em}
-.snapshot-meta{font-size:12px;color:var(--soft);line-height:1.45;margin-top:4px}
-.snapshot-note{max-width:520px;font-size:12px;color:var(--faint);line-height:1.45;text-align:right}
+body{padding:0;margin:0}
+.do-btn,.ghost,[data-do]{display:none!important}
+.node,.hchip,.scale[data-facet]{cursor:pointer}
+.wrap{padding:18px;max-width:none}
 .snapshot-summary{padding:18px 24px;border-bottom:1px solid var(--line);background:var(--bg2)}
 .snapshot-summary h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin:0 0 4px}
 .snapshot-summary p{margin:0;color:var(--soft);font-size:12px;line-height:1.45}
 .snapshot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:12px}
 .snapshot-grid ol{margin:8px 0 0;padding-left:18px}.snapshot-grid li{margin:4px 0;font-size:12px}.snapshot-grid span{color:var(--soft)}
-.wrap{padding:18px;max-width:none}
-.do-btn,.ghost,[data-do]{display:none!important}
-.node,.hchip,.scale[data-facet]{cursor:pointer}
-@media print{body{background:#fff}.snapshot-top,.card{break-inside:avoid}.wrap{display:block}.card{margin-bottom:14px}}
+@media print{
+  body{background:#fff !important;color:#000 !important}
+  .snap-header{background:#fff !important;border-bottom:2px solid #000 !important;padding:18px 22px 14px !important}
+  .snap-title{color:#000 !important}
+  .snap-section,.snap-body .snap-section{box-shadow:none !important;border:1px solid #ccc !important;break-inside:avoid}
+  .snap-body{display:block !important}
+  .snap-section{margin-bottom:14px}
+  .snap-footer{border-top:1px solid #ccc !important}
+  @page{size:A4 portrait;margin:18mm 14mm}
+  .do-btn,.ghost,[data-do],[data-node],[data-facet]{pointer-events:none}
+  #interactive-section{display:none !important}
+}
 </style>
 </head>
 <body>
-<div class="snapshot-top">
-  <div>
-    <div class="snapshot-title">Dashboard HiTOP</div>
-    <div class="snapshot-meta">Sujeto: ${escapeHTML(subjectId)} · Exportado: ${escapeHTML(today)} · Vista: <span id="snapshotView">${escapeHTML(selectedLabel)}</span></div>
+<div class="snap-header">
+  <div class="snap-header-main">
+    <h1 class="snap-title">Perfil HiTOP</h1>
+    <p class="snap-subject">${escapeHTML(subjectId)}</p>
+    <p class="snap-meta-row">Generado: ${escapeHTML(today)} &nbsp;·&nbsp; ${b.done}/${b.total} ítems respondidos (${b.pct}%)</p>
+    <span class="snap-badge">Beta interna — no diagnóstico</span>
+    ${pfBadgeHTML}
   </div>
-  <div class="snapshot-note">Dashboard navegable de solo lectura para revisión. No incluye otros perfiles ni respuestas ítem por ítem.</div>
+  <div class="snap-header-right">
+    <span class="snap-completeness">${b.formsDone}/${b.formsTotal} escalas completas</span>
+    <span class="snap-completeness" style="font-size:11px">Vista: <span id="snapshotView">${escapeHTML(selectedLabel)}</span></span>
+  </div>
 </div>
-${dashboardSummaryHTML(subjectId,today)}
+<div class="snap-body">
+  <div class="snap-section snap-radar-section">
+    <h3>Perfil de espectros HiTOP</h3>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:0 0 260px;max-width:100%">
+        <div class="radar-svg-wrap" style="max-width:260px">${radarSVG}</div>
+      </div>
+      <div style="flex:1 1 200px">
+        <p style="font-size:12px;color:var(--faint);margin:0 0 10px;line-height:1.5">Percentiles 0–100 sobre el total posible de cada espectro. Anillos de referencia en 25, 50 y 75. Los símbolos ●◆▲ indican carga baja/media/alta.</p>
+        ${radarData.spectra.filter(s=>s.has).length?`<div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--faint)">${radarData.spectra.filter(s=>s.has).map(sp=>{const col=sp.level==="high"?"var(--sv-high)":sp.level==="mid"?"var(--sv-mid)":"var(--sv-low)";return`<span><span style="color:${col};font-weight:700">${sp.level==="high"?"▲":sp.level==="mid"?"◆":"●"}</span> ${escapeHTML(sp.label)} <strong>${sp.pct}</strong></span>`;}).join("")}</div>`:`<p style="font-size:12px;color:var(--faint);margin:0">Sin datos de espectros.</p>`}
+      </div>
+    </div>
+  </div>
+  <div class="snap-section">
+    <h3>Elevaciones principales (top 6)</h3>
+    ${buildSnapElevationsHTML(elevRows)}
+  </div>
+  <div class="snap-section">
+    <h3>Completitud de la batería</h3>
+    <p style="font-size:13px;color:var(--soft);margin:0 0 8px">${b.formsDone} de ${b.formsTotal} escalas completas. ${b.done}/${b.total} ítems respondidos (${b.pct}%).</p>
+    <div style="height:8px;background:var(--track);border-radius:999px;overflow:hidden;margin-bottom:10px"><div style="width:${b.pct}%;height:100%;background:linear-gradient(90deg,var(--sv-low),var(--accent));border-radius:999px"></div></div>
+    <p style="font-size:12px;color:var(--faint);margin:0;line-height:1.5">La barra usa % crudo del total posible. El percentil normativo aparece solo cuando existe para la escala.</p>
+  </div>
+</div>
+<div id="interactive-section">
 ${wrap.outerHTML}
+</div>
+<div class="snap-footer">Cribado dimensional — no constituye diagnóstico. Generado el ${escapeHTML(today)}. HiTOP Suite v3 Beta interna.</div>
 <script>
 const DASH_PANELS=${safeScriptJSON(panels)};
 let activeKey=${safeScriptJSON(initialKey)};
