@@ -1,0 +1,41 @@
+name: Crear tag de version
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Nombre del tag (ej. v3.2.0)"
+        required: true
+      sha:
+        description: "Commit SHA a taggear"
+        required: true
+      message:
+        description: "Mensaje del tag"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.payload.inputs.tag;
+            const sha = context.payload.inputs.sha;
+            const message = context.payload.inputs.message || tag;
+            try {
+              await github.rest.git.getRef({ ...context.repo, ref: `tags/${tag}` });
+              core.info(`El tag ${tag} ya existe; nada que hacer.`);
+              return;
+            } catch (e) { /* no existe: lo creamos */ }
+            const tagObj = await github.rest.git.createTag({
+              ...context.repo, tag, message, object: sha, type: "commit",
+            });
+            await github.rest.git.createRef({
+              ...context.repo, ref: `refs/tags/${tag}`, sha: tagObj.data.sha,
+            });
+            core.info(`Tag ${tag} creado sobre ${sha}.`);
