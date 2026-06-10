@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>HiTOP Research</title>
 <link rel="stylesheet" href="{% static 'clinical/webapp.css' %}">
 </head>
@@ -43,7 +43,9 @@
   <section class="card">
     <h2>Pacientes research</h2>
     <label>Buscar por HCL exacto<input id="searchBox"></label>
-    <table><thead><tr><th>Paciente</th><th>HCL</th><th>Bateria</th><th>Progreso</th><th>Estado</th><th>Accion</th></tr></thead><tbody id="patientRows"></tbody></table>
+    <div class="table-scroll">
+      <table><thead><tr><th>Paciente</th><th>HCL</th><th>Bateria</th><th>Progreso</th><th>Estado</th><th>Accion</th></tr></thead><tbody id="patientRows"></tbody></table>
+    </div>
   </section>
   <section id="dimensionMap"></section>
 </main>

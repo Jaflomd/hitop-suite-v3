@@ -64,10 +64,19 @@
 
   /* ===== GLOBAL RESET & TOUCH ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 "Segoe UI",system-ui,-apple-system,sans-serif}
+  /* NO overflow-x:hidden on body — fix overflow causes individually.
+     The only permitted horizontal scroll is inside .map */
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 "Segoe UI",system-ui,-apple-system,sans-serif;max-width:100%}
   button{font-family:inherit;cursor:pointer;touch-action:manipulation}
   input,select{touch-action:manipulation}
   .hidden{display:none!important}
+
+  /* ===== RESPONSIVE BREAKPOINTS
+     ≤480px  : teléfono pequeño
+     481-744px: teléfono grande / tablet portrait pequeña
+     745-1024px: tablet
+     >1024px : desktop (comportamiento original)
+  ===== */
 
   /* ===== FOCUS VISIBLE ===== */
   :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
@@ -77,18 +86,20 @@
     *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   }
 
-  #gate{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:20}
+  /* ===== GATE ===== */
+  #gate{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:20;min-height:100dvh;padding:16px 16px env(safe-area-inset-bottom,16px)}
   .gate-card{width:min(360px,90vw);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:28px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.10)}
   .gate-card h1{font-size:18px;margin:0 0 4px}.gate-card p{color:var(--soft);font-size:13px;margin:0 0 16px}
   .gate-card input{width:100%;padding:11px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:16px;text-align:center}
-  .gate-card button{width:100%;margin-top:10px;padding:11px;border:none;border-radius:6px;background:var(--accent);color:var(--accent-tx);font-weight:700;touch-action:manipulation}
+  .gate-card button{width:100%;margin-top:10px;padding:13px 11px;border:none;border-radius:6px;background:var(--accent);color:var(--accent-tx);font-weight:700;touch-action:manipulation;min-height:48px}
   .gate-card button:active{transform:scale(.98);filter:brightness(.94)}
   .gate-err{color:var(--high-tx);font-size:13px;margin-top:8px;min-height:16px}
 
-  header{display:flex;gap:14px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-  header .brand{font-weight:700}
-  header .tag{font-size:11px;color:var(--accent-tx);background:var(--accent);padding:2px 8px;border-radius:999px;font-weight:700}
-  header .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  /* ===== HEADER ===== */
+  header{display:flex;gap:14px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap;min-width:0}
+  header .brand{font-weight:700;white-space:nowrap}
+  header .tag{font-size:11px;color:var(--accent-tx);background:var(--accent);padding:2px 8px;border-radius:999px;font-weight:700;white-space:nowrap}
+  header .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}
   header .patient-toolbar{padding-right:6px}
   header .export-toolbar{justify-content:flex-end}
   /* font-size 16px to prevent iOS Safari auto-zoom on focus */
@@ -96,14 +107,93 @@
   header button.act:active{transform:scale(.98);background:var(--line)}
   header .spacer{flex:1}
   .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
-  .seg button{background:var(--panel2);color:var(--soft);border:none;padding:8px 14px;font-size:14px;min-height:44px;touch-action:manipulation;user-select:none}
+  .seg button{background:var(--panel2);color:var(--soft);border:none;padding:8px 14px;font-size:14px;min-height:44px;touch-action:manipulation;user-select:none;white-space:nowrap}
   .seg button.on{background:var(--accent);color:var(--accent-tx);font-weight:700}
   .seg button:active{filter:brightness(.92)}
 
-  .wrap{display:grid;grid-template-columns:1fr 372px;gap:16px;padding:18px;align-items:start}
-  @media(max-width:900px){.wrap{grid-template-columns:1fr}}
-  @media(min-width:901px){.side-panel{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto}}
-  @media(max-width:720px){header{gap:8px}.toolbar{width:100%}header .export-toolbar{justify-content:flex-start}header select{flex:1 1 180px}header button.act{flex:1 1 auto}.seg{width:100%}.seg button{flex:1}}
+  /* ===== LAYOUT PRINCIPAL ===== */
+  .wrap{display:grid;grid-template-columns:1fr 372px;gap:16px;padding:18px;align-items:start;min-width:0}
+
+  /* tablet & phones: 1 columna, mapa primero, panel después */
+  @media(max-width:1024px){
+    .wrap{grid-template-columns:1fr}
+  }
+  /* sticky side-panel solo en desktop */
+  @media(min-width:1025px){
+    .side-panel{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto}
+  }
+
+  /* ===== TABLET (745–1024px): ajustes intermedios ===== */
+  @media(max-width:1024px){
+    header{gap:10px}
+    .toolbar{width:100%}
+    header .export-toolbar{justify-content:flex-start}
+    header select{flex:1 1 180px}
+    header button.act{flex:1 1 auto}
+    .seg{width:100%}
+    .seg button{flex:1}
+  }
+
+  /* ===== TELÉFONO GRANDE / TABLET PEQUEÑA (481–744px) ===== */
+  @media(max-width:744px){
+    .wrap{padding:12px}
+    /* En tablets pequeñas el panel no queda sticky */
+    .side-panel{position:static!important}
+  }
+
+  /* ===== TELÉFONO (≤480px): header en filas limpias ===== */
+  @media(max-width:480px){
+    header{
+      display:grid;
+      grid-template-columns:1fr auto;
+      grid-template-areas:
+        "brand-row brand-row"
+        "patient-toolbar patient-toolbar"
+        "theme-seg theme-seg"
+        "export-toolbar export-toolbar";
+      gap:8px;
+      padding:10px 12px;
+    }
+    /* fila 1: marca + tag */
+    header>.brand{grid-area:brand-row;align-self:center}
+    header>.yachay-wordmark{grid-area:brand-row;align-self:center}
+    header>.tag{grid-area:brand-row;align-self:center;justify-self:end}
+    /* fila 2: selección de paciente */
+    header>.toolbar.patient-toolbar{
+      grid-area:patient-toolbar;
+      width:100%;
+      padding-right:0;
+      flex-wrap:wrap;
+    }
+    header>.toolbar.patient-toolbar select{flex:1 1 100%;width:100%}
+    header>.toolbar.patient-toolbar button{flex:1 1 30%}
+    /* ocultar spacer en móvil */
+    header>.spacer{display:none}
+    /* fila 3: selector de tema */
+    header>#themeSeg{
+      grid-area:theme-seg;
+      width:100%;
+    }
+    /* fila 4: export toolbar — botones en wrap 2-por-fila */
+    header>.toolbar.export-toolbar{
+      grid-area:export-toolbar;
+      width:100%;
+      justify-content:flex-start;
+    }
+    header>.toolbar.export-toolbar button.act{
+      flex:1 1 45%;
+      min-width:0;
+      padding:8px 6px;
+      font-size:clamp(12px,3vw,14px);
+    }
+    header select{flex:1 1 0;min-width:0}
+    .wrap{padding:10px 8px}
+    .card{padding:14px 12px}
+    .app-note{margin:0 10px;font-size:11px}
+    /* panel lateral: sin sticky, sin margen excesivo */
+    .side-panel{position:static!important;max-height:none!important}
+  }
+
   .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
   .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin:0 0 4px}
   .card .sub{font-size:12px;color:var(--faint);margin:0 0 12px}
@@ -125,11 +215,64 @@
   .item-progress-meta{display:flex;justify-content:space-between;gap:10px;margin-top:6px;color:var(--soft);font-size:12px;font-variant-numeric:tabular-nums}
   .muted{color:var(--soft);font-size:13px}
   .app-note{font-size:12px;color:var(--faint);margin:0 18px}
-  @media(max-width:720px){.map-head{grid-template-columns:1fr}.item-progress{min-width:0}}
+  @media(max-width:744px){.map-head{grid-template-columns:1fr}.item-progress{min-width:0}}
 
   .rowlabels{display:grid;grid-template-columns:repeat(3,1fr);font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
   .rowlabels span:nth-child(2){text-align:center}.rowlabels span:nth-child(3){text-align:right}
-  .map{overflow-x:auto;padding-bottom:4px}
+  /* ===== MAPA: scroll horizontal interno con indicadores de borde ===== */
+  .map-scroll-wrap{
+    position:relative;
+    /* fade shadow on right edge to hint more content */
+  }
+  .map-scroll-wrap::after{
+    content:"";
+    position:absolute;
+    top:0;right:0;bottom:4px;
+    width:32px;
+    background:linear-gradient(to left,var(--bg) 0%,transparent 100%);
+    pointer-events:none;
+    border-radius:0 8px 8px 0;
+    opacity:0;
+    transition:opacity .2s;
+  }
+  .map-scroll-wrap.can-scroll-right::after{opacity:1}
+  .map-scroll-wrap::before{
+    content:"";
+    position:absolute;
+    top:0;left:0;bottom:4px;
+    width:32px;
+    background:linear-gradient(to right,var(--bg) 0%,transparent 100%);
+    pointer-events:none;
+    border-radius:8px 0 0 8px;
+    opacity:0;
+    transition:opacity .2s;
+    z-index:1;
+  }
+  .map-scroll-wrap.can-scroll-left::before{opacity:1}
+  .map{
+    overflow-x:auto;
+    overflow-y:visible;
+    padding-bottom:4px;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+    scrollbar-color:var(--line) transparent;
+  }
+  .map::-webkit-scrollbar{height:4px}
+  .map::-webkit-scrollbar-track{background:transparent}
+  .map::-webkit-scrollbar-thumb{background:var(--line);border-radius:999px}
+  /* Primera visita: hint de deslizar (oculto tras primer scroll via JS) */
+  .map-scroll-hint{
+    display:none;
+    align-items:center;
+    gap:5px;
+    font-size:11px;
+    color:var(--faint);
+    margin-bottom:6px;
+    animation:hintPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes hintPulse{0%,100%{opacity:.5}50%{opacity:1}}
+  .map-scroll-hint.visible{display:flex}
+  @media(prefers-reduced-motion:reduce){.map-scroll-hint{animation:none;opacity:.8}}
   .row{display:flex;gap:6px;margin-bottom:6px;align-items:flex-start}
   .node{border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--text);background:var(--bg2);font-weight:600;font-size:12px;line-height:1.2;width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:6px;transition:filter .12s,transform .12s;touch-action:manipulation;user-select:none;box-shadow:0 1px 4px rgba(0,0,0,.05)}
   .node:hover{filter:brightness(.99);transform:translateY(-1px)}
@@ -151,12 +294,19 @@
   .sev-label.sev-low-label{color:var(--sv-low)}
   .node.sel{outline:2px solid var(--accent);outline-offset:1px}
   .band{flex:1}.spectrum{min-height:52px;flex:1 1 0;justify-content:space-between}.spacer{flex-basis:0}
+  /* col: 130px desktop, reducido en móvil vía media query */
   .col{flex:1 1 130px;min-width:130px;display:flex;flex-direction:column;gap:6px}
   .map-inner{min-width:max-content;display:flex;flex-direction:column;gap:6px}
   .spectra-groups{display:flex;gap:6px;align-items:flex-start}
   .sgroup{flex-basis:0;display:flex;flex-direction:column;gap:6px;min-width:0}
   .leaf-row{display:flex;gap:4px}
+  /* leaf: 116px desktop, reducido en móvil vía media query */
   .leaf{flex:1 1 0;min-width:116px;display:flex;flex-direction:column;gap:5px}
+  /* ===== MAPA: columnas más compactas en teléfono ===== */
+  @media(max-width:480px){
+    .col{flex:1 1 112px;min-width:112px}
+    .leaf{min-width:100px}
+  }
   .spectop{min-height:40px}
   .subnode{min-height:36px}
   .rb-sym{background:var(--panel2)}
@@ -232,7 +382,22 @@
 
   /* ===== ADMIN MODAL ===== */
   #modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:30;padding:16px}
-  .admin-card{width:min(640px,96vw);max-height:94vh;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px;box-shadow:0 8px 40px rgba(0,0,0,.22)}
+  /* modal base: centrado con scroll interno, radio y padding normal */
+  .admin-card{
+    width:min(640px,96vw);
+    max-height:94dvh;
+    overflow-y:auto;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:26px;
+    box-shadow:0 8px 40px rgba(0,0,0,.22);
+    display:flex;
+    flex-direction:column;
+  }
+  /* admin-body: bloque normal en desktop (la card completa hace scroll);
+     en ≤480px se activa como área flexible scrollable (ver media query) */
+  .admin-body{}
   .admin-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
   .admin-heading{flex:1;min-width:0}
   .admin-title{font-size:18px;font-weight:800}
@@ -247,7 +412,7 @@
   .admin-prog{height:11px;background:var(--panel2);border-radius:999px;margin:16px 0 6px;overflow:hidden}
   .admin-prog div{height:100%;background:var(--accent);transition:width .35s cubic-bezier(.4,0,.2,1)}
   .admin-count{font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px}
-  .admin-q{font-size:27px;font-weight:600;line-height:1.32;margin:10px 0 22px}
+  .admin-q{font-size:clamp(20px,5.5vw,27px);font-weight:600;line-height:1.32;margin:10px 0 22px}
   .admin-opts{display:flex;flex-direction:column;gap:10px}
   /* Item transition animation */
   .admin-item-area{transition:opacity .18s ease,transform .18s ease}
@@ -260,6 +425,52 @@
   .admin-shortcuts{margin-top:12px;font-size:12px;color:var(--faint);text-align:center}
   .admin-nav{display:flex;align-items:center;gap:12px;margin-top:22px}
   .admin-nav .muted{flex:1;text-align:center}
+
+  /* ===== MODAL: teléfono grande/tablet portrait (481–744px) ===== */
+  @media(max-width:744px){
+    #modal{padding:8px}
+    .admin-card{
+      width:min(640px,96vw);
+      max-height:96dvh;
+    }
+  }
+
+  /* ===== MODAL: teléfono pequeño (≤480px) — pantalla completa real ===== */
+  @media(max-width:480px){
+    #modal{padding:0;align-items:stretch}
+    .admin-card{
+      width:100%;
+      height:100dvh;
+      max-height:none;
+      border-radius:0;
+      border:none;
+      padding:16px 16px 0;
+      box-shadow:none;
+      overflow-y:hidden;
+    }
+    /* El cuerpo (pregunta + opciones) scrollable ocupa el espacio libre */
+    .admin-body{
+      flex:1 1 0;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      padding-bottom:8px;
+      min-height:0;
+    }
+    /* La nav se pega al fondo, sobre safe-area */
+    .admin-nav{
+      flex-shrink:0;
+      background:var(--panel);
+      padding:12px 0 max(16px,env(safe-area-inset-bottom,16px));
+      margin-top:0;
+      border-top:1px solid var(--line);
+    }
+    .admin-title{font-size:16px}
+    .admin-q{margin-bottom:16px}
+    /* Top, prog, count no deben encogerse — forman parte del card flex */
+    .admin-card>.admin-top{flex-shrink:0}
+    .admin-card>.admin-prog{flex-shrink:0}
+    .admin-card>.admin-count{flex-shrink:0}
+  }
 
   /* ===== SCALE COMPLETION CELEBRATION ===== */
   .admin-complete{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;gap:16px}
@@ -280,8 +491,13 @@
   .radar-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.07);margin-bottom:14px}
   .radar-card-title{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);font-weight:800;margin:0 0 10px;display:flex;align-items:center;gap:8px}
   .radar-card-title .pfactor-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accent);color:var(--accent-tx);letter-spacing:.04em}
-  .radar-svg-wrap{width:100%;aspect-ratio:1/1;max-width:320px;margin:0 auto;display:block}
+  /* Radar SVG: fluido dentro del panel, centrado, max-width contenido */
+  .radar-svg-wrap{width:100%;aspect-ratio:1/1;max-width:min(320px,100%);margin:0 auto;display:block}
   .radar-svg-wrap svg{width:100%;height:100%;display:block;overflow:visible}
+  /* En pantallas ≤480px el radar puede ir más grande si el panel lo permite */
+  @media(max-width:480px){
+    .radar-svg-wrap{max-width:min(320px,80vw)}
+  }
   @keyframes radarFadeIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
   .radar-poly{animation:radarFadeIn .45s cubic-bezier(.4,0,.2,1) forwards}
   @media(prefers-reduced-motion:reduce){.radar-poly{animation:none}}
@@ -298,12 +514,18 @@
   .elev-glyph.sev-high-glyph{color:var(--sv-high)}
   .elev-glyph.sev-mid-glyph{color:var(--sv-mid)}
   .elev-glyph.sev-low-glyph{color:var(--sv-low)}
+  /* ellipsis by default; word-break available when white-space is relaxed via media query */
   .elev-name{font-size:13px;font-weight:600;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .elev-bar-wrap{flex:0 0 72px}
   .elev-bar{height:6px;background:var(--track);border-radius:999px;overflow:hidden}
   .elev-bar i{display:block;height:100%;border-radius:999px}
   .elev-pct{font-size:14px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--text);flex:0 0 36px;text-align:right}
   .elev-empty{color:var(--faint);font-size:13px;padding:6px 0;text-align:center;border:1px dashed var(--line);border-radius:8px;background:var(--panel2);margin-top:4px}
+  /* En móvil pequeño: barra de elevaciones más compacta */
+  @media(max-width:480px){
+    .elev-bar-wrap{flex:0 0 52px}
+    .elev-pct{flex:0 0 30px;font-size:13px}
+  }
 
   /* ===== SNAPSHOT DASHBOARD MEJORADO ===== */
   .snap-header{padding:24px 28px 20px;background:var(--panel);border-bottom:2px solid var(--line);display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap}
@@ -398,7 +620,12 @@
         <button class="map-filter" data-map-filter="elevated" aria-pressed="false">Elevados</button>
         <button class="map-filter" data-map-filter="pending" aria-pressed="false">Pendientes</button>
       </div>
-      <div class="map" id="map" role="region" aria-label="Mapa dimensional interactivo"></div>
+      <div class="map-scroll-wrap" id="mapScrollWrap">
+        <div class="map-scroll-hint" id="mapScrollHint" aria-hidden="true">
+          <span>desliza</span><span>→</span>
+        </div>
+        <div class="map" id="map" role="region" aria-label="Mapa dimensional interactivo"></div>
+      </div>
       <div class="legend" aria-label="Leyenda de severidad">
         <span><i class="sev-none"></i><i class="legend-sym" aria-hidden="true">·</i>sin evaluar</span>
         <span><i class="sev-low"></i><i class="legend-sym" aria-hidden="true">●</i>baja</span>
@@ -3151,11 +3378,13 @@ function renderModal(){
     </div>
     <div class="admin-prog" role="progressbar" aria-label="Progreso de respuestas" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}"><div style="width:${Math.round(done/total*100)}%"></div></div>
     <div class="admin-count" aria-live="polite">Item ${i+1} de ${total} &nbsp;·&nbsp; ${done}/${total} respondidos</div>
-    <div class="admin-item-area" id="adminItemArea">
-      <div class="admin-q">${A.items[i]}</div>
-      <div class="admin-opts">${currentOpts.map((o,v)=>`<button class="opt ${cur===v?"on":""}" data-v="${v}" data-shortcut="${adminShortcutForOption(o,v)}" aria-pressed="${cur===v}">${o}</button>`).join("")}</div>
+    <div class="admin-body">
+      <div class="admin-item-area" id="adminItemArea">
+        <div class="admin-q">${A.items[i]}</div>
+        <div class="admin-opts">${currentOpts.map((o,v)=>`<button class="opt ${cur===v?"on":""}" data-v="${v}" data-shortcut="${adminShortcutForOption(o,v)}" aria-pressed="${cur===v}">${o}</button>`).join("")}</div>
+      </div>
+      <div class="admin-shortcuts">Atajos: numeros para responder · flechas para navegar · Esc para cerrar</div>
     </div>
-    <div class="admin-shortcuts">Atajos: numeros para responder · flechas para navegar · Esc para cerrar</div>
     <div class="admin-nav">
       <button class="ghost" data-back ${i===0?"disabled":""}>Atras</button>
       <span class="muted">${A.note?`<span style="color:var(--high-tx)">${A.note}</span>`:`${done}/${total} respondidos`}</span>
@@ -3581,6 +3810,26 @@ body{padding:0;margin:0}
 .snapshot-summary p{margin:0;color:var(--soft);font-size:12px;line-height:1.45}
 .snapshot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:12px}
 .snapshot-grid ol{margin:8px 0 0;padding-left:18px}.snapshot-grid li{margin:4px 0;font-size:12px}.snapshot-grid span{color:var(--soft)}
+/* ===== Dashboard export: responsive overrides ===== */
+@media(max-width:700px){
+  .snap-body{grid-template-columns:1fr !important}
+  .snap-radar-section{grid-column:1 !important}
+  .radar-svg-wrap{max-width:100% !important;width:100% !important}
+  .snap-header{padding:16px 14px 12px !important;gap:12px}
+  .snap-title{font-size:18px !important}
+  .snap-subject{font-size:13px !important}
+  .wrap{padding:10px 8px !important}
+}
+@media(max-width:480px){
+  .snapshot-grid{grid-template-columns:1fr !important}
+  .snapshot-summary{padding:14px 12px !important}
+  .snap-body{padding:10px 8px !important}
+  .snap-section{padding:12px 10px !important}
+  /* Elevaciones: nombres que pueden ser largos */
+  .snap-elev-name,.elev-name{white-space:normal !important;word-break:break-word}
+  /* wrap principal a 1 columna */
+  .wrap{grid-template-columns:1fr !important}
+}
 @media print{
   body{background:#fff !important;color:#000 !important}
   .snap-header{background:#fff !important;border-bottom:2px solid #000 !important;padding:18px 22px 14px !important}
@@ -3613,8 +3862,8 @@ body{padding:0;margin:0}
   <div class="snap-section snap-radar-section">
     <h3>Perfil de espectros HiTOP</h3>
     <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
-      <div style="flex:0 0 260px;max-width:100%">
-        <div class="radar-svg-wrap" style="max-width:260px">${radarSVG}</div>
+      <div style="flex:0 0 260px;max-width:100%;width:100%">
+        <div class="radar-svg-wrap" style="max-width:260px;width:100%">${radarSVG}</div>
       </div>
       <div style="flex:1 1 200px">
         <p style="font-size:12px;color:var(--faint);margin:0 0 10px;line-height:1.5">Percentiles 0–100 sobre el total posible de cada espectro. Anillos de referencia en 25, 50 y 75. Los símbolos ●◆▲ indican carga baja/media/alta.</p>
@@ -3859,6 +4108,42 @@ function boot(){
     PATIENTS.splice(pIndex,1);pIndex=Math.max(0,pIndex-1);selected=null;savePatients();renderPatientSel();renderMap();renderPanel();
   };
   renderMap();renderPanel();
+  // ===== Mapa: scroll shadows + hint de deslizar =====
+  (function initMapScroll(){
+    const wrap=document.getElementById("mapScrollWrap");
+    const map=document.getElementById("map");
+    const hint=document.getElementById("mapScrollHint");
+    if(!wrap||!map)return;
+    let hintDismissed=false;
+    try{hintDismissed=!!localStorage.getItem("hitop_map_hint_seen");}catch(e){}
+    function updateShadows(){
+      const sl=map.scrollLeft, sw=map.scrollWidth, cw=map.clientWidth;
+      const canLeft=sl>2;
+      const canRight=sl+cw<sw-2;
+      wrap.classList.toggle("can-scroll-left",canLeft);
+      wrap.classList.toggle("can-scroll-right",canRight);
+      // Show hint once if there's overflow and it hasn't been dismissed
+      if(!hintDismissed&&canRight&&hint){
+        hint.classList.add("visible");
+      }
+    }
+    map.addEventListener("scroll",()=>{
+      updateShadows();
+      if(!hintDismissed){
+        hintDismissed=true;
+        try{localStorage.setItem("hitop_map_hint_seen","1");}catch(e){}
+        if(hint)hint.classList.remove("visible");
+      }
+    },{passive:true});
+    // Re-check whenever map content changes (renderMap calls)
+    if(typeof ResizeObserver!=="undefined"){
+      const ro=new ResizeObserver(()=>updateShadows());
+      ro.observe(map);
+    } else {
+      window.addEventListener("resize",updateShadows,{passive:true});
+    }
+    updateShadows();
+  })();
 }
 const THEME_KEY="hitop_theme";
 function setTheme(t){document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem(THEME_KEY,t);}catch(e){}

@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>HiTOP Clinico</title>
 <link rel="stylesheet" href="{% static 'clinical/webapp.css' %}">
 </head>
@@ -67,7 +67,9 @@
   <section id="dimensionMap"></section>
   <section class="card">
     <h2>Resultados longitudinales</h2>
-    <table><thead><tr><th>Escala</th><th>Valor</th><th>Severidad</th><th>Modo</th><th>Fecha</th></tr></thead><tbody id="resultRows"></tbody></table>
+    <div class="table-scroll">
+      <table><thead><tr><th>Escala</th><th>Valor</th><th>Severidad</th><th>Modo</th><th>Fecha</th></tr></thead><tbody id="resultRows"></tbody></table>
+    </div>
   </section>
 </main>
 <script src="{% static 'clinical/scale_catalog.js' %}"></script>

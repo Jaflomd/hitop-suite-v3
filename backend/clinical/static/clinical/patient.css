@@ -50,6 +50,9 @@
 html, body {
   height: 100%;
   overscroll-behavior: none;
+  /* Evita scroll horizontal del documento en todo breakpoint */
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -59,6 +62,7 @@ body {
   background: linear-gradient(160deg, var(--bg-start) 0%, var(--bg-end) 100%);
   background-attachment: fixed;
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -77,6 +81,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* ── Connectivity badge ────────────────────────────────────── */
@@ -115,7 +120,11 @@ body {
   align-items: center;
   justify-content: flex-start;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
+  /* Evita desborde horizontal en cualquier breakpoint */
+  max-width: 100%;
+  overflow-x: hidden;
   padding: 40px 20px 80px;
   animation: pp-fadein 250ms ease-out both;
 }
@@ -136,6 +145,25 @@ body {
   padding: 36px 32px;
   width: 100%;
   max-width: 560px;
+}
+
+/* ── Desktop / iPad landscape: centrar contenido en columna estrecha ── */
+@media (min-width: 744px) {
+  /* Las pantallas que no son item se centran horizontalmente */
+  .pp-screen:not(#pp-screen-item).active {
+    display: flex;
+    width: 100%;
+    align-items: center;
+  }
+  /* Cards y listas se limitan para no tener líneas kilométricas */
+  .pp-card, .pp-chapters, .pp-map-actions, .pp-map-header,
+  .pp-battery-selector, .pp-assignment-sel-wrap {
+    max-width: 640px;
+  }
+  /* Item screen: contenido principal centrado con max-width */
+  .pp-item-shell {
+    max-width: 720px;
+  }
 }
 
 /* ── Brand / logo ──────────────────────────────────────────── */
@@ -170,6 +198,20 @@ body {
 
 .pp-login-card {
   padding: 40px 36px;
+}
+
+/* Teléfonos pequeños: login card con menos padding */
+@media (max-width: 430px) {
+  .pp-login-card {
+    padding: 28px 20px;
+  }
+  .pp-brand h1 {
+    font-size: clamp(22px, 6.5vw, 28px);
+  }
+  .pp-brand .pp-logo-mark {
+    width: 48px;
+    height: 48px;
+  }
 }
 
 .pp-form-group {
@@ -328,6 +370,16 @@ body {
   padding-top: 60px;
 }
 
+/* Teléfonos pequeños: mapa de capítulos */
+@media (max-width: 430px) {
+  #pp-screen-map {
+    padding-top: 40px;
+  }
+  .pp-map-header {
+    padding: 0 4px;
+  }
+}
+
 .pp-map-header {
   text-align: center;
   margin-bottom: 32px;
@@ -394,18 +446,45 @@ body {
 
 .pp-chapter-info {
   flex: 1;
+  min-width: 0; /* Permite que el flex item se encoja con ellipsis */
 }
 .pp-chapter-name {
   font-size: var(--fs-md);
   font-weight: 600;
   color: var(--text);
   margin-bottom: 2px;
+  /* Evita desborde de texto largo */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .pp-chapter-meta {
   font-size: var(--fs-xs);
   color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .chapter-active .pp-chapter-name { color: var(--blue); }
+
+/* En teléfonos pequeños: permitir wrap en el nombre del capítulo */
+@media (max-width: 430px) {
+  .pp-chapter-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    font-size: var(--fs-sm);
+  }
+  .pp-chapter {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .pp-chapter-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+}
 
 .pp-map-actions {
   width: 100%;
@@ -512,16 +591,20 @@ body {
 #pp-screen-item {
   padding: 0;
   justify-content: stretch;
+  /* Usar dvh para que la barra del navegador no tape contenido */
+  min-height: 100dvh;
 }
 
 .pp-item-shell {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   max-width: 680px;
   margin: 0 auto;
-  padding: 0 0 24px;
+  /* Padding inferior respeta la notch en dispositivos iOS */
+  padding: 0 0 max(24px, env(safe-area-inset-bottom));
 }
 
 /* Progress bar header */
@@ -535,6 +618,8 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  /* deja sitio al badge de conexión fijo arriba a la derecha */
+  padding-right: 92px;
 }
 .pp-progress-counter {
   font-size: var(--fs-sm);
@@ -642,7 +727,8 @@ body {
 }
 
 .pp-item-question {
-  font-size: 26px;
+  /* clamp: mínimo 19px en 360px, crece hasta 28px, óptimo ~5.5vw */
+  font-size: clamp(19px, 5.5vw, 28px);
   font-weight: 500;
   color: var(--text);
   line-height: 1.45;
@@ -663,6 +749,7 @@ body {
   align-items: center;
   gap: 14px;
   width: 100%;
+  /* ≥56px en teléfonos para tap fácil */
   min-height: 56px;
   padding: 14px 18px;
   background: rgba(255,255,255,.92);
@@ -750,6 +837,38 @@ body {
   to   { opacity: 1; transform: translateX(0); }
 }
 
+/* ── Landscape teléfono: pantalla de ítem usable con scroll ─── */
+/* En landscape ~390px alto el contenido puede requerir scroll   */
+@media (max-height: 500px) and (orientation: landscape) {
+  .pp-item-shell {
+    /* Permite scroll vertical si el contenido supera la pantalla */
+    overflow-y: auto;
+    /* dvh garantiza que la barra del navegador no tape nada */
+    max-height: 100dvh;
+  }
+  .pp-item-header {
+    padding: 10px 16px 8px;
+  }
+  .pp-item-nav {
+    padding: 0 16px 4px;
+  }
+  .pp-item-content {
+    padding: 10px 16px 0;
+  }
+  .pp-item-question {
+    /* Reduce tamaño en landscape para que quepan opciones */
+    font-size: clamp(16px, 4vw, 22px);
+    margin-bottom: 16px;
+  }
+  .pp-opt-btn {
+    min-height: 48px;
+    padding: 10px 14px;
+  }
+  .pp-progress-bar-track {
+    height: 6px;
+  }
+}
+
 /* ── Celebration screen ─────────────────────────────────────── */
 #pp-screen-celebrate {
   justify-content: center;
@@ -758,6 +877,22 @@ body {
 .pp-celebrate-card {
   text-align: center;
   padding: 52px 36px;
+}
+
+/* Teléfonos pequeños: celebrate y done con menos padding vertical */
+@media (max-width: 430px) {
+  .pp-celebrate-card {
+    padding: 36px 20px;
+  }
+  .pp-done-card {
+    padding: 40px 20px;
+  }
+  .pp-done-title {
+    font-size: clamp(22px, 7vw, 28px);
+  }
+  .pp-intro-card {
+    padding: 28px 20px;
+  }
 }
 
 .pp-checkmark-wrap {

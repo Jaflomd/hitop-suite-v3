@@ -446,7 +446,7 @@
     var svgStyle = prefersReduced ? "" : "<style>@keyframes radarFadeIn{from{opacity:0}to{opacity:1}}</style>";
 
     container.innerHTML = svgStyle +
-      '<svg viewBox="0 0 340 330" role="img" aria-label="Radar de espectros HiTOP" style="width:100%;max-width:360px;display:block;margin:0 auto;overflow:visible">' +
+      '<svg viewBox="-55 0 450 330" role="img" aria-label="Radar de espectros HiTOP" style="width:100%;max-width:420px;display:block;margin:0 auto;overflow:visible">' +
       ringsSvg + axesSvg + ringLabelsSvg + polygonSvg + dotsSvg + labelsSvg +
       '</svg>';
   }
