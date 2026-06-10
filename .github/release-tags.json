@@ -8,5 +8,10 @@
     "tag": "v3.2.0",
     "sha": "159e2636bed0937cdccae8fb3f9726677d8469a6",
     "message": "Responsive multi-dispositivo: 360px a desktop, modal pantalla completa en móvil, mapa con scroll guiado"
+  },
+  {
+    "tag": "v3.2.1",
+    "sha": "1c639143621f3f2c686a93885fa194569ce8b908",
+    "message": "Fix: labels del mapa HiTOP truncados en pantallas angostas"
   }
 ]
