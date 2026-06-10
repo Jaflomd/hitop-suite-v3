@@ -1,0 +1,12 @@
+[
+  {
+    "tag": "v3.1.0",
+    "sha": "fab5fc11a213f5b4e1f5889e2004fd59b600fd4f",
+    "message": "UX kiosko: portal paciente gamificado, rediseño táctil iPad, radar de espectros, reportes y hardening de backend"
+  },
+  {
+    "tag": "v3.2.0",
+    "sha": "159e2636bed0937cdccae8fb3f9726677d8469a6",
+    "message": "Responsive multi-dispositivo: 360px a desktop, modal pantalla completa en móvil, mapa con scroll guiado"
+  }
+]
