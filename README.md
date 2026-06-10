@@ -4,6 +4,7 @@ Beta interna autocontenida para exploracion dimensional HiTOP + neurodesarrollo.
 
 ## App
 
+- Webapp publicada (GitHub Pages, solo `index.html`): https://jaflomd.github.io/hitop-suite-v3/
 - `index.html`: app local en HTML unico.
 - No requiere assets externos: CSS, datos, items y logica estan embebidos en el HTML.
 - Abrir directamente en navegador o servir la carpeta con un servidor local simple.
